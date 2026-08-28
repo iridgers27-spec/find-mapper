@@ -602,7 +602,9 @@ function compressPhoto(file) {
 
           }
 
-        } else {
+        }
+
+        else {
 
           if (height > maxSize) {
 
@@ -686,7 +688,9 @@ function handlePhoto(file) {
 
     preview.src = photo;
 
-    preview.style.display = "block";
+    preview.style.display =
+
+    "block";
 
   });
 
@@ -1116,7 +1120,9 @@ document.getElementById(
 
   preview.src = "";
 
-  preview.style.display = "none";
+  preview.style.display =
+
+  "none";
 
   document.getElementById(
 
@@ -1426,11 +1432,7 @@ function updateFindList() {
 
       }
 
-      if (
-
-        find.era
-
-      ) {
+      if (find.era) {
 
         if (detailText) {
 
@@ -1446,11 +1448,7 @@ function updateFindList() {
 
       }
 
-      if (
-
-        find.photo
-
-      ) {
+      if (find.photo) {
 
         if (detailText) {
 
@@ -1590,7 +1588,7 @@ document.getElementById(
 
 "backupButton"
 
-).onclick = function() {
+).onclick = async function() {
 
   if (finds.length === 0) {
 
@@ -1608,29 +1606,51 @@ document.getElementById(
 
     app: "Find Mapper",
 
-    backupDate: new Date().toISOString(),
+    backupDate:
 
-    finds: finds.map(function(find) {
+    new Date().toISOString(),
+
+    finds:
+
+    finds.map(function(find) {
 
       return {
 
-        number: find.number || null,
+        number:
 
-        find: find.find || "",
+        find.number || null,
 
-        material: find.material || "",
+        find:
 
-        era: find.era || "",
+        find.find || "",
 
-        remarks: find.remarks || "",
+        material:
 
-        lat: find.lat || null,
+        find.material || "",
 
-        lng: find.lng || null,
+        era:
 
-        recorded: find.recorded || "",
+        find.era || "",
 
-        photo: find.photo || null
+        remarks:
+
+        find.remarks || "",
+
+        lat:
+
+        find.lat || null,
+
+        lng:
+
+        find.lng || null,
+
+        recorded:
+
+        find.recorded || "",
+
+        photo:
+
+        find.photo || null
 
       };
 
@@ -1638,7 +1658,9 @@ document.getElementById(
 
   };
 
-  const json = JSON.stringify(
+  const json =
+
+  JSON.stringify(
 
     backupData,
 
@@ -1648,26 +1670,6 @@ document.getElementById(
 
   );
 
-  const blob = new Blob(
-
-    [json],
-
-    {
-
-      type: "application/json"
-
-    }
-
-  );
-
-  const url =
-
-  URL.createObjectURL(blob);
-
-  const link =
-
-  document.createElement("a");
-
   const today =
 
   new Date()
@@ -1676,9 +1678,7 @@ document.getElementById(
 
   .slice(0, 10);
 
-  link.href = url;
-
-  link.download =
+  const filename =
 
   "FindMapper_Backup_" +
 
@@ -1686,17 +1686,149 @@ document.getElementById(
 
   ".json";
 
-  document.body.appendChild(link);
+  try {
+
+    if (
+
+      navigator.share &&
+
+      navigator.canShare
+
+    ) {
+
+      const file =
+
+      new File(
+
+        [json],
+
+        filename,
+
+        {
+
+          type:
+
+          "application/json"
+
+        }
+
+      );
+
+      if (
+
+        navigator.canShare({
+
+          files: [file]
+
+        })
+
+      ) {
+
+        await navigator.share({
+
+          files: [file],
+
+          title:
+
+          "Find Mapper Backup",
+
+          text:
+
+          "Backup of my Find Mapper records."
+
+        });
+
+        return;
+
+      }
+
+    }
+
+  }
+
+  catch (error) {
+
+    if (
+
+      error.name ===
+
+      "AbortError"
+
+    ) {
+
+      return;
+
+    }
+
+  }
+
+  const blob =
+
+  new Blob(
+
+    [json],
+
+    {
+
+      type:
+
+      "application/json"
+
+    }
+
+  );
+
+  const url =
+
+  URL.createObjectURL(
+
+    blob
+
+  );
+
+  const link =
+
+  document.createElement(
+
+    "a"
+
+  );
+
+  link.href =
+
+  url;
+
+  link.download =
+
+  filename;
+
+  document.body.appendChild(
+
+    link
+
+  );
 
   link.click();
 
-  document.body.removeChild(link);
+  document.body.removeChild(
 
-  URL.revokeObjectURL(url);
+    link
 
-  alert(
+  );
 
-    "Backup created successfully."
+  setTimeout(
+
+    function() {
+
+      URL.revokeObjectURL(
+
+        url
+
+      );
+
+    },
+
+    1000
 
   );
 
