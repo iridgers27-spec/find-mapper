@@ -4,7 +4,9 @@
 
 <head>
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport"
+
+content="width=device-width, initial-scale=1">
 
 <title>Find Mapper</title>
 
@@ -58,6 +60,8 @@ body {
 
   font-weight: bold;
 
+  box-shadow: 0 3px 10px #555;
+
 }
 
 #form {
@@ -82,6 +86,16 @@ body {
 
   box-shadow: 0 2px 15px #555;
 
+  max-height: 90vh;
+
+  overflow-y: auto;
+
+}
+
+#title {
+
+  margin-top: 0;
+
 }
 
 #findNumber {
@@ -90,27 +104,59 @@ body {
 
   font-weight: bold;
 
-  margin-bottom: 12px;
+  margin-bottom: 15px;
 
 }
 
 label {
 
+  display: block;
+
   font-weight: bold;
+
+  margin-top: 10px;
 
 }
 
-input {
+input,
+
+textarea {
 
   width: 100%;
 
   padding: 12px;
 
-  margin: 6px 0 12px;
+  margin-top: 6px;
+
+  margin-bottom: 10px;
 
   box-sizing: border-box;
 
   font-size: 17px;
+
+  border: 1px solid #bbb;
+
+  border-radius: 8px;
+
+}
+
+textarea {
+
+  min-height: 100px;
+
+  resize: vertical;
+
+}
+
+#recorded {
+
+  font-size: 14px;
+
+  color: #555;
+
+  margin-top: 5px;
+
+  margin-bottom: 15px;
 
 }
 
@@ -123,6 +169,8 @@ button {
   border-radius: 10px;
 
   border: none;
+
+  margin-right: 5px;
 
 }
 
@@ -140,16 +188,6 @@ button {
 
 }
 
-#recorded {
-
-  font-size: 14px;
-
-  color: #555;
-
-  margin-top: 10px;
-
-}
-
 </style>
 
 </head>
@@ -158,37 +196,97 @@ button {
 
 <div id="map"></div>
 
-<button id="findButton">＋ FIND</button>
+<button id="findButton">
+
+＋ FIND
+
+</button>
 
 <div id="form">
 
-<h2 id="title">New Find</h2>
+<h2 id="title">
 
-<div id="findNumber"></div>
+New Find
 
-<label>Find</label>
+</h2>
 
-<input id="find">
-
-<label>Material</label>
-
-<input id="material">
-
-<label>Date / Era</label>
-
-<input id="era">
-
-<div id="recorded"></div>
-
-<br>
-
-<button id="save">SAVE</button>
-
-<button id="cancel">CANCEL</button>
+<div id="findNumber">
 
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<label>
+
+Find
+
+</label>
+
+<input
+
+id="find"
+
+autocomplete="off">
+
+<label>
+
+Material
+
+</label>
+
+<input
+
+id="material"
+
+autocomplete="off">
+
+<label>
+
+Date / Era
+
+</label>
+
+<input
+
+id="era"
+
+autocomplete="off">
+
+<label>
+
+Remarks
+
+</label>
+
+<textarea
+
+id="remarks"
+
+placeholder="Enter any additional information...">
+
+</textarea>
+
+<div id="recorded">
+
+</div>
+
+<button id="save">
+
+SAVE
+
+</button>
+
+<button id="cancel">
+
+CANCEL
+
+</button>
+
+</div>
+
+<script
+
+src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+
+</script>
 
 <script>
 
@@ -200,7 +298,11 @@ let editingFind = null;
 
 let finds =
 
-JSON.parse(localStorage.getItem("finds") || "[]");
+JSON.parse(
+
+localStorage.getItem("finds") || "[]"
+
+);
 
 function nextFindNumber() {
 
@@ -208,11 +310,17 @@ function nextFindNumber() {
 
   finds.forEach(function(find) {
 
-    if (find.number &&
+    if (
 
-        Number(find.number) > highest) {
+      find.number &&
 
-      highest = Number(find.number);
+      Number(find.number) > highest
+
+    ) {
+
+      highest =
+
+      Number(find.number);
 
     }
 
@@ -248,13 +356,7 @@ function formatDate(date) {
 
 function startMap() {
 
-  map = L.map("map").setView(
-
-    [51.35, 0.75],
-
-    16
-
-  );
+  map = L.map("map");
 
   L.tileLayer(
 
@@ -272,7 +374,11 @@ function startMap() {
 
   finds.forEach(addMarker);
 
-  if (navigator.geolocation) {
+  if (
+
+    navigator.geolocation
+
+  ) {
 
     navigator.geolocation.watchPosition(
 
@@ -286,15 +392,11 @@ function startMap() {
 
         ];
 
-        map.setView(
+        if (
 
-          currentLocation,
+          !window.locationMarker
 
-          17
-
-        );
-
-        if (!window.locationMarker) {
+        ) {
 
           window.locationMarker =
 
@@ -316,13 +418,25 @@ function startMap() {
 
           ).addTo(map);
 
+          map.setView(
+
+            currentLocation,
+
+            17
+
+          );
+
         }
 
         else {
 
           window.locationMarker
 
-          .setLatLng(currentLocation);
+          .setLatLng(
+
+            currentLocation
+
+          );
 
         }
 
@@ -347,6 +461,16 @@ function startMap() {
         timeout: 15000
 
       }
+
+    );
+
+  }
+
+  else {
+
+    alert(
+
+      "GPS is not available."
 
     );
 
@@ -384,49 +508,87 @@ function addMarker(find) {
 
       editingFind = find;
 
-      document.getElementById("title")
+      document.getElementById(
 
-      .innerText = "Edit Find";
+        "title"
 
-      document.getElementById("findNumber")
+      ).innerText =
 
-      .innerText =
+      "Edit Find";
+
+      document.getElementById(
+
+        "findNumber"
+
+      ).innerText =
 
       "Find #" +
 
-      (find.number || "unknown");
+      (
 
-      document.getElementById("find")
+        find.number ||
 
-      .value =
+        "unknown"
+
+      );
+
+      document.getElementById(
+
+        "find"
+
+      ).value =
 
       find.find || "";
 
-      document.getElementById("material")
+      document.getElementById(
 
-      .value =
+        "material"
+
+      ).value =
 
       find.material || "";
 
-      document.getElementById("era")
+      document.getElementById(
 
-      .value =
+        "era"
+
+      ).value =
 
       find.era || "";
 
-      document.getElementById("recorded")
+      document.getElementById(
 
-      .innerText =
+        "remarks"
+
+      ).value =
+
+      find.remarks || "";
+
+      document.getElementById(
+
+        "recorded"
+
+      ).innerText =
 
       find.recorded
 
-      ? "Recorded: " + find.recorded
+      ?
 
-      : "";
+      "Recorded: " +
 
-      document.getElementById("form")
+      find.recorded
 
-      .style.display = "block";
+      :
+
+      "";
+
+      document.getElementById(
+
+        "form"
+
+      ).style.display =
+
+      "block";
 
     }
 
@@ -434,9 +596,11 @@ function addMarker(find) {
 
 }
 
-document.getElementById("findButton")
+document.getElementById(
 
-.onclick = function() {
+  "findButton"
+
+).onclick = function() {
 
   if (!currentLocation) {
 
@@ -456,69 +620,125 @@ document.getElementById("findButton")
 
   nextFindNumber();
 
-  document.getElementById("title")
+  document.getElementById(
 
-  .innerText = "New Find";
+    "title"
 
-  document.getElementById("findNumber")
+  ).innerText =
 
-  .innerText =
+  "New Find";
+
+  document.getElementById(
+
+    "findNumber"
+
+  ).innerText =
 
   "Find #" + number;
 
-  document.getElementById("find")
+  document.getElementById(
 
-  .value = "";
+    "find"
 
-  document.getElementById("material")
+  ).value = "";
 
-  .value = "";
+  document.getElementById(
 
-  document.getElementById("era")
+    "material"
 
-  .value = "";
+  ).value = "";
 
-  document.getElementById("recorded")
+  document.getElementById(
 
-  .innerText =
+    "era"
+
+  ).value = "";
+
+  document.getElementById(
+
+    "remarks"
+
+  ).value = "";
+
+  document.getElementById(
+
+    "recorded"
+
+  ).innerText =
 
   "Recorded: " +
 
-  formatDate(new Date());
+  formatDate(
 
-  document.getElementById("form")
+    new Date()
 
-  .style.display = "block";
+  );
 
-};
+  document.getElementById(
 
-document.getElementById("cancel")
+    "form"
 
-.onclick = function() {
+  ).style.display =
 
-  document.getElementById("form")
-
-  .style.display = "none";
+  "block";
 
 };
 
-document.getElementById("save")
+document.getElementById(
 
-.onclick = function() {
+  "cancel"
+
+).onclick = function() {
+
+  document.getElementById(
+
+    "form"
+
+  ).style.display =
+
+  "none";
+
+};
+
+document.getElementById(
+
+  "save"
+
+).onclick = function() {
 
   if (editingFind) {
 
     editingFind.find =
 
-    document.getElementById("find").value;
+    document.getElementById(
+
+      "find"
+
+    ).value;
 
     editingFind.material =
 
-    document.getElementById("material").value;
+    document.getElementById(
+
+      "material"
+
+    ).value;
 
     editingFind.era =
 
-    document.getElementById("era").value;
+    document.getElementById(
+
+      "era"
+
+    ).value;
+
+    editingFind.remarks =
+
+    document.getElementById(
+
+      "remarks"
+
+    ).value;
 
     localStorage.setItem(
 
@@ -540,15 +760,35 @@ document.getElementById("save")
 
       find:
 
-      document.getElementById("find").value,
+      document.getElementById(
+
+        "find"
+
+      ).value,
 
       material:
 
-      document.getElementById("material").value,
+      document.getElementById(
+
+        "material"
+
+      ).value,
 
       era:
 
-      document.getElementById("era").value,
+      document.getElementById(
+
+        "era"
+
+      ).value,
+
+      remarks:
+
+      document.getElementById(
+
+        "remarks"
+
+      ).value,
 
       lat:
 
@@ -560,7 +800,11 @@ document.getElementById("save")
 
       recorded:
 
-      formatDate(new Date())
+      formatDate(
+
+        new Date()
+
+      )
 
     };
 
@@ -578,9 +822,13 @@ document.getElementById("save")
 
   }
 
-  document.getElementById("form")
+  document.getElementById(
 
-  .style.display = "none";
+    "form"
+
+  ).style.display =
+
+  "none";
 
 };
 
@@ -591,3 +839,4 @@ startMap();
 </body>
 
 </html>
+
