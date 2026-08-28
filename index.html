@@ -54,12 +54,6 @@ button {
 
 }
 
-/* =====================================================
-
-   MAP BUTTONS
-
-===================================================== */
-
 #findsButton {
 
   position: fixed;
@@ -126,12 +120,6 @@ button {
 
 }
 
-/* =====================================================
-
-   PLACE FIND MESSAGE
-
-===================================================== */
-
 #placeMessage {
 
   display: none;
@@ -171,12 +159,6 @@ button {
   background: #ddd;
 
 }
-
-/* =====================================================
-
-   FORM
-
-===================================================== */
 
 #form,
 
@@ -332,6 +314,12 @@ textarea {
 
 }
 
+#save:disabled {
+
+  opacity: 0.6;
+
+}
+
 #cancel {
 
   background: #ddd;
@@ -355,12 +343,6 @@ textarea {
   margin-top: 15px;
 
 }
-
-/* =====================================================
-
-   PHOTO
-
-===================================================== */
 
 #photoButtons {
 
@@ -412,11 +394,17 @@ textarea {
 
 }
 
-/* =====================================================
+#removePhoto {
 
-   FIND LIST
+  display: none;
 
-===================================================== */
+  width: 100%;
+
+  background: #eee;
+
+  margin-top: 8px;
+
+}
 
 .findItem {
 
@@ -452,12 +440,6 @@ textarea {
 
 }
 
-/* =====================================================
-
-   EXPORT BUTTONS
-
-===================================================== */
-
 #backupButton,
 
 #csvButton {
@@ -487,12 +469,6 @@ textarea {
   color: white;
 
 }
-
-/* =====================================================
-
-   BLUE FIND DOT
-
-===================================================== */
 
 .find-dot {
 
@@ -556,11 +532,7 @@ CANCEL
 
 </div>
 
-<!-- =====================================================
-
-     FIND FORM
-
-===================================================== -->
+<!-- FIND FORM -->
 
 <div id="form">
 
@@ -656,6 +628,16 @@ accept="image/*">
 
 id="photoPreview">
 
+<button
+
+id="removePhoto"
+
+type="button">
+
+REMOVE PHOTO
+
+</button>
+
 <div id="recorded"></div>
 
 <button
@@ -690,11 +672,7 @@ type="button">
 
 </div>
 
-<!-- =====================================================
-
-     FINDS PANEL
-
-===================================================== -->
+<!-- FINDS PANEL -->
 
 <div id="findsPanel">
 
@@ -748,7 +726,23 @@ src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
 
 /* =====================================================
 
-   GLOBAL VARIABLES
+   DATABASE
+
+===================================================== */
+
+const DB_NAME = "FindMapperDatabase";
+
+const DB_VERSION = 2;
+
+const FIND_STORE = "finds";
+
+const PHOTO_STORE = "photos";
+
+let db = null;
+
+/* =====================================================
+
+   GLOBALS
 
 ===================================================== */
 
@@ -756,35 +750,19 @@ let map = null;
 
 let currentLocation = null;
 
+let finds = [];
+
 let editingFind = null;
-
-let pendingPhoto = null;
-
-let placingFind = false;
 
 let selectedLocation = null;
 
+let pendingPhoto = null;
+
+let pendingPhotoRemoved = false;
+
+let placingFind = false;
+
 let temporaryMarker = null;
-
-let finds = [];
-
-/* =====================================================
-
-   INDEXED DB
-
-===================================================== */
-
-const DB_NAME =
-
-"FindMapperDatabase";
-
-const DB_VERSION = 1;
-
-const STORE_NAME =
-
-"finds";
-
-let db = null;
 
 /* =====================================================
 
@@ -794,87 +772,103 @@ let db = null;
 
 function openDatabase() {
 
-  return new Promise(
+  return new Promise(function(resolve, reject) {
 
-    function(resolve, reject) {
+    const request =
 
-      const request =
+    indexedDB.open(
 
-      indexedDB.open(
+      DB_NAME,
 
-        DB_NAME,
+      DB_VERSION
 
-        DB_VERSION
+    );
 
-      );
+    request.onupgradeneeded =
 
-      request.onupgradeneeded =
+    function(event) {
 
-      function(event) {
+      const database =
 
-        const database =
+      event.target.result;
 
-        event.target.result;
+      if (
 
-        if (
+        !database.objectStoreNames.contains(
 
-          !database.objectStoreNames.contains(
+          FIND_STORE
 
-            STORE_NAME
+        )
 
-          )
+      ) {
 
-        ) {
+        database.createObjectStore(
 
-          database.createObjectStore(
+          FIND_STORE,
 
-            STORE_NAME,
+          {
 
-            {
+            keyPath: "id",
 
-              keyPath:
+            autoIncrement: true
 
-              "id",
-
-              autoIncrement:
-
-              true
-
-            }
-
-          );
-
-        }
-
-      };
-
-      request.onsuccess =
-
-      function(event) {
-
-        db =
-
-        event.target.result;
-
-        resolve(db);
-
-      };
-
-      request.onerror =
-
-      function(event) {
-
-        reject(
-
-          event.target.error
+          }
 
         );
 
-      };
+      }
 
-    }
+      if (
 
-  );
+        !database.objectStoreNames.contains(
+
+          PHOTO_STORE
+
+        )
+
+      ) {
+
+        database.createObjectStore(
+
+          PHOTO_STORE,
+
+          {
+
+            keyPath: "findId"
+
+          }
+
+        );
+
+      }
+
+    };
+
+    request.onsuccess =
+
+    function(event) {
+
+      db =
+
+      event.target.result;
+
+      resolve(db);
+
+    };
+
+    request.onerror =
+
+    function(event) {
+
+      reject(
+
+        event.target.error
+
+      );
+
+    };
+
+  });
 
 }
 
@@ -886,59 +880,55 @@ function openDatabase() {
 
 function getAllFinds() {
 
-  return new Promise(
+  return new Promise(function(resolve, reject) {
 
-    function(resolve, reject) {
+    const transaction =
 
-      const transaction =
+    db.transaction(
 
-      db.transaction(
+      FIND_STORE,
 
-        STORE_NAME,
+      "readonly"
 
-        "readonly"
+    );
+
+    const store =
+
+    transaction.objectStore(
+
+      FIND_STORE
+
+    );
+
+    const request =
+
+    store.getAll();
+
+    request.onsuccess =
+
+    function() {
+
+      resolve(
+
+        request.result || []
 
       );
 
-      const store =
+    };
 
-      transaction.objectStore(
+    request.onerror =
 
-        STORE_NAME
+    function() {
+
+      reject(
+
+        request.error
 
       );
 
-      const request =
+    };
 
-      store.getAll();
-
-      request.onsuccess =
-
-      function() {
-
-        resolve(
-
-          request.result || []
-
-        );
-
-      };
-
-      request.onerror =
-
-      function() {
-
-        reject(
-
-          request.error
-
-        );
-
-      };
-
-    }
-
-  );
+  });
 
 }
 
@@ -948,61 +938,57 @@ function getAllFinds() {
 
 ===================================================== */
 
-function addFindToDatabase(find) {
+function addFind(find) {
 
-  return new Promise(
+  return new Promise(function(resolve, reject) {
 
-    function(resolve, reject) {
+    const transaction =
 
-      const transaction =
+    db.transaction(
 
-      db.transaction(
+      FIND_STORE,
 
-        STORE_NAME,
+      "readwrite"
 
-        "readwrite"
+    );
+
+    const store =
+
+    transaction.objectStore(
+
+      FIND_STORE
+
+    );
+
+    const request =
+
+    store.add(find);
+
+    request.onsuccess =
+
+    function() {
+
+      find.id =
+
+      request.result;
+
+      resolve(find);
+
+    };
+
+    request.onerror =
+
+    function() {
+
+      reject(
+
+        request.error
 
       );
 
-      const store =
+    };
 
-      transaction.objectStore(
-
-        STORE_NAME
-
-      );
-
-      const request =
-
-      store.add(find);
-
-      request.onsuccess =
-
-      function() {
-
-        find.id =
-
-        request.result;
-
-        resolve(find);
-
-      };
-
-      request.onerror =
-
-      function() {
-
-        reject(
-
-          request.error
-
-        );
-
-      };
-
-    }
-
-  );
+  });
 
 }
 
@@ -1012,491 +998,455 @@ function addFindToDatabase(find) {
 
 ===================================================== */
 
-function updateFindInDatabase(find) {
+function updateFind(find) {
 
-  return new Promise(
+  return new Promise(function(resolve, reject) {
 
-    function(resolve, reject) {
+    const transaction =
 
-      const transaction =
+    db.transaction(
 
-      db.transaction(
+      FIND_STORE,
 
-        STORE_NAME,
-
-        "readwrite"
-
-      );
-
-      const store =
-
-      transaction.objectStore(
-
-        STORE_NAME
-
-      );
-
-      const request =
-
-      store.put(find);
-
-      request.onsuccess =
-
-      function() {
-
-        resolve(find);
-
-      };
-
-      request.onerror =
-
-      function() {
-
-        reject(
-
-          request.error
-
-        );
-
-      };
-
-    }
-
-  );
-
-}
-
-/* =====================================================
-
-   DELETE FIND FROM DATABASE
-
-===================================================== */
-
-function deleteFindFromDatabase(find) {
-
-  return new Promise(
-
-    function(resolve, reject) {
-
-      const transaction =
-
-      db.transaction(
-
-        STORE_NAME,
-
-        "readwrite"
-
-      );
-
-      const store =
-
-      transaction.objectStore(
-
-        STORE_NAME
-
-      );
-
-      const request =
-
-      store.delete(find.id);
-
-      request.onsuccess =
-
-      function() {
-
-        resolve();
-
-      };
-
-      request.onerror =
-
-      function() {
-
-        reject(
-
-          request.error
-
-        );
-
-      };
-
-    }
-
-  );
-
-}
-
-/* =====================================================
-
-   MIGRATE OLD LOCALSTORAGE DATA
-
-===================================================== */
-
-async function migrateOldFinds() {
-
-  let oldFinds = [];
-
-  try {
-
-    oldFinds =
-
-    JSON.parse(
-
-      localStorage.getItem("finds") || "[]"
+      "readwrite"
 
     );
 
-  }
+    const store =
 
-  catch(error) {
+    transaction.objectStore(
 
-    oldFinds = [];
+      FIND_STORE
 
-  }
+    );
 
-  if (
+    const request =
 
-    !Array.isArray(oldFinds) ||
+    store.put(find);
 
-    oldFinds.length === 0
+    request.onsuccess =
 
-  ) {
+    function() {
 
-    return;
-
-  }
-
-  const existing =
-
-  await getAllFinds();
-
-  if (existing.length > 0) {
-
-    return;
-
-  }
-
-  for (
-
-    let i = 0;
-
-    i < oldFinds.length;
-
-    i++
-
-  ) {
-
-    const oldFind =
-
-    oldFinds[i];
-
-    const newFind = {
-
-      number:
-
-      oldFind.number,
-
-      find:
-
-      oldFind.find || "",
-
-      material:
-
-      oldFind.material || "",
-
-      era:
-
-      oldFind.era || "",
-
-      remarks:
-
-      oldFind.remarks || "",
-
-      lat:
-
-      oldFind.lat,
-
-      lng:
-
-      oldFind.lng,
-
-      recorded:
-
-      oldFind.recorded || "",
-
-      photo:
-
-      oldFind.photo || null
+      resolve(find);
 
     };
 
-    await addFindToDatabase(
+    request.onerror =
 
-      newFind
+    function() {
+
+      reject(
+
+        request.error
+
+      );
+
+    };
+
+  });
+
+}
+
+/* =====================================================
+
+   DELETE FIND
+
+===================================================== */
+
+function deleteFind(find) {
+
+  return new Promise(function(resolve, reject) {
+
+    const transaction =
+
+    db.transaction(
+
+      FIND_STORE,
+
+      "readwrite"
 
     );
 
-  }
+    const store =
 
-  /*
+    transaction.objectStore(
 
-     Keep the old data for now.
+      FIND_STORE
 
-     It is deliberately NOT deleted.
+    );
 
-     This gives us an extra safety copy.
+    const request =
 
-  */
+    store.delete(find.id);
+
+    request.onsuccess =
+
+    function() {
+
+      resolve();
+
+    };
+
+    request.onerror =
+
+    function() {
+
+      reject(
+
+        request.error
+
+      );
+
+    };
+
+  });
 
 }
 
 /* =====================================================
 
-   LOAD DATABASE
+   SAVE PHOTO AS BLOB
 
 ===================================================== */
 
-async function loadFinds() {
+function savePhotoBlob(findId, blob) {
 
-  finds =
+  return new Promise(function(resolve, reject) {
 
-  await getAllFinds();
+    const transaction =
+
+    db.transaction(
+
+      PHOTO_STORE,
+
+      "readwrite"
+
+    );
+
+    const store =
+
+    transaction.objectStore(
+
+      PHOTO_STORE
+
+    );
+
+    const request =
+
+    store.put({
+
+      findId:
+
+      findId,
+
+      blob:
+
+      blob
+
+    });
+
+    request.onsuccess =
+
+    function() {
+
+      resolve();
+
+    };
+
+    request.onerror =
+
+    function() {
+
+      reject(
+
+        request.error
+
+      );
+
+    };
+
+  });
 
 }
 
 /* =====================================================
 
-   NEXT FIND NUMBER
+   GET PHOTO
 
 ===================================================== */
 
-function nextFindNumber() {
+function getPhotoBlob(findId) {
 
-  let highest = 0;
+  return new Promise(function(resolve, reject) {
 
-  finds.forEach(
+    const transaction =
 
-    function(find) {
+    db.transaction(
 
-      const number =
+      PHOTO_STORE,
 
-      Number(find.number);
+      "readonly"
+
+    );
+
+    const store =
+
+    transaction.objectStore(
+
+      PHOTO_STORE
+
+    );
+
+    const request =
+
+    store.get(findId);
+
+    request.onsuccess =
+
+    function() {
 
       if (
 
-        Number.isFinite(number) &&
-
-        number > highest
+        request.result
 
       ) {
 
-        highest =
+        resolve(
 
-        number;
+          request.result.blob
+
+        );
 
       }
 
-    }
+      else {
 
-  );
+        resolve(null);
 
-  return highest + 1;
+      }
+
+    };
+
+    request.onerror =
+
+    function() {
+
+      reject(
+
+        request.error
+
+      );
+
+    };
+
+  });
 
 }
 
 /* =====================================================
 
-   DATE
+   DELETE PHOTO
 
 ===================================================== */
 
-function formatDate(date) {
+function deletePhotoBlob(findId) {
 
-  return date.toLocaleString(
+  return new Promise(function(resolve, reject) {
 
-    "en-GB",
+    const transaction =
 
-    {
+    db.transaction(
 
-      day: "2-digit",
+      PHOTO_STORE,
 
-      month: "2-digit",
+      "readwrite"
 
-      year: "numeric",
+    );
 
-      hour: "2-digit",
+    const store =
 
-      minute: "2-digit"
+    transaction.objectStore(
 
-    }
+      PHOTO_STORE
 
-  );
+    );
+
+    const request =
+
+    store.delete(findId);
+
+    request.onsuccess =
+
+    function() {
+
+      resolve();
+
+    };
+
+    request.onerror =
+
+    function() {
+
+      reject(
+
+        request.error
+
+      );
+
+    };
+
+  });
 
 }
 
 /* =====================================================
 
-   PHOTO COMPRESSION
+   COMPRESS PHOTO TO BLOB
 
 ===================================================== */
 
 function compressPhoto(file) {
 
-  return new Promise(
+  return new Promise(function(resolve, reject) {
 
-    function(resolve, reject) {
+    const reader =
 
-      const reader =
+    new FileReader();
 
-      new FileReader();
+    reader.onload =
 
-      reader.onload =
+    function(event) {
 
-      function(event) {
+      const img =
 
-        const img =
+      new Image();
 
-        new Image();
+      img.onload =
 
-        img.onload =
+      function() {
 
-        function() {
+        const maxSize = 1200;
 
-          const maxSize =
+        let width =
 
-          1200;
+        img.width;
 
-          let width =
+        let height =
 
-          img.width;
+        img.height;
 
-          let height =
+        if (width > height) {
 
-          img.height;
+          if (width > maxSize) {
 
-          if (width > height) {
+            height =
 
-            if (
+            height *
 
-              width > maxSize
+            maxSize /
 
-            ) {
+            width;
 
-              height =
+            width =
 
-              height *
-
-              maxSize /
-
-              width;
-
-              width =
-
-              maxSize;
-
-            }
+            maxSize;
 
           }
 
-          else {
+        }
 
-            if (
+        else {
 
-              height > maxSize
+          if (height > maxSize) {
 
-            ) {
+            width =
 
-              width =
+            width *
 
-              width *
+            maxSize /
 
-              maxSize /
+            height;
 
-              height;
+            height =
 
-              height =
-
-              maxSize;
-
-            }
+            maxSize;
 
           }
 
-          const canvas =
+        }
 
-          document.createElement(
+        const canvas =
 
-            "canvas"
+        document.createElement(
 
-          );
+          "canvas"
 
-          canvas.width =
+        );
 
-          width;
+        canvas.width =
 
-          canvas.height =
+        width;
 
-          height;
+        canvas.height =
 
-          const ctx =
+        height;
 
-          canvas.getContext(
+        const ctx =
 
-            "2d"
+        canvas.getContext(
 
-          );
+          "2d"
 
-          ctx.drawImage(
+        );
 
-            img,
+        ctx.drawImage(
 
-            0,
+          img,
 
-            0,
+          0,
 
-            width,
+          0,
 
-            height
+          width,
 
-          );
+          height
 
-          resolve(
+        );
 
-            canvas.toDataURL(
+        canvas.toBlob(
 
-              "image/jpeg",
+          function(blob) {
 
-              0.75
+            if (!blob) {
 
-            )
+              reject(
 
-          );
+                new Error(
 
-        };
+                  "Photo conversion failed."
 
-        img.onerror =
+                )
 
-        function() {
+              );
 
-          reject(
+              return;
 
-            new Error(
+            }
 
-              "Could not load photo."
+            resolve(blob);
 
-            )
+          },
 
-          );
+          "image/jpeg",
 
-        };
+          0.75
 
-        img.src =
-
-        event.target.result;
+        );
 
       };
 
-      reader.onerror =
+      img.onerror =
 
       function() {
 
@@ -1504,7 +1454,7 @@ function compressPhoto(file) {
 
           new Error(
 
-            "Could not read photo."
+            "Photo could not be opened."
 
           )
 
@@ -1512,21 +1462,37 @@ function compressPhoto(file) {
 
       };
 
-      reader.readAsDataURL(
+      img.src =
 
-        file
+      event.target.result;
+
+    };
+
+    reader.onerror =
+
+    function() {
+
+      reject(
+
+        new Error(
+
+          "Photo could not be read."
+
+        )
 
       );
 
-    }
+    };
 
-  );
+    reader.readAsDataURL(file);
+
+  });
 
 }
 
 /* =====================================================
 
-   HANDLE PHOTO
+   PHOTO INPUT
 
 ===================================================== */
 
@@ -1540,49 +1506,57 @@ function handlePhoto(file) {
 
   compressPhoto(file)
 
-  .then(
+  .then(function(blob) {
 
-    function(photo) {
+    pendingPhoto =
 
-      pendingPhoto =
+    blob;
 
-      photo;
+    pendingPhotoRemoved =
 
-      const preview =
+    false;
 
-      document.getElementById(
+    const preview =
 
-        "photoPreview"
+    document.getElementById(
 
-      );
+      "photoPreview"
 
-      preview.src =
+    );
 
-      photo;
+    preview.src =
 
-      preview.style.display =
+    URL.createObjectURL(
 
-      "block";
+      blob
 
-    }
+    );
 
-  )
+    preview.style.display =
 
-  .catch(
+    "block";
 
-    function(error) {
+    document.getElementById(
 
-      console.error(error);
+      "removePhoto"
 
-      alert(
+    ).style.display =
 
-        "The photo could not be loaded."
+    "block";
 
-      );
+  })
 
-    }
+  .catch(function(error) {
 
-  );
+    console.error(error);
+
+    alert(
+
+      "The photo could not be processed."
+
+    );
+
+  });
 
 }
 
@@ -1624,7 +1598,137 @@ function(event) {
 
 /* =====================================================
 
-   BLUE DOT ICON
+   REMOVE PHOTO
+
+===================================================== */
+
+document.getElementById(
+
+"removePhoto"
+
+).onclick =
+
+function() {
+
+  pendingPhoto =
+
+  null;
+
+  pendingPhotoRemoved =
+
+  true;
+
+  const preview =
+
+  document.getElementById(
+
+    "photoPreview"
+
+  );
+
+  preview.src =
+
+  "";
+
+  preview.style.display =
+
+  "none";
+
+  document.getElementById(
+
+    "removePhoto"
+
+  ).style.display =
+
+  "none";
+
+  document.getElementById(
+
+    "cameraInput"
+
+  ).value =
+
+  "";
+
+  document.getElementById(
+
+    "libraryInput"
+
+  ).value =
+
+  "";
+
+};
+
+/* =====================================================
+
+   FIND NUMBER
+
+===================================================== */
+
+function nextFindNumber() {
+
+  let highest = 0;
+
+  finds.forEach(function(find) {
+
+    const number =
+
+    Number(find.number);
+
+    if (
+
+      Number.isFinite(number) &&
+
+      number > highest
+
+    ) {
+
+      highest =
+
+      number;
+
+    }
+
+  });
+
+  return highest + 1;
+
+}
+
+/* =====================================================
+
+   DATE
+
+===================================================== */
+
+function formatDate(date) {
+
+  return date.toLocaleString(
+
+    "en-GB",
+
+    {
+
+      day: "2-digit",
+
+      month: "2-digit",
+
+      year: "numeric",
+
+      hour: "2-digit",
+
+      minute: "2-digit"
+
+    }
+
+  );
+
+}
+
+/* =====================================================
+
+   BLUE DOT
 
 ===================================================== */
 
@@ -1652,7 +1756,7 @@ function findIcon() {
 
 /* =====================================================
 
-   ADD MAP MARKER
+   ADD MARKER
 
 ===================================================== */
 
@@ -1660,33 +1764,21 @@ function addMarker(find) {
 
   if (
 
-    find.lat === undefined ||
+    !Number.isFinite(
 
-    find.lng === undefined
+      Number(find.lat)
 
-  ) {
+    ) ||
 
-    return null;
+    !Number.isFinite(
 
-  }
+      Number(find.lng)
 
-  const lat =
-
-  Number(find.lat);
-
-  const lng =
-
-  Number(find.lng);
-
-  if (
-
-    !Number.isFinite(lat) ||
-
-    !Number.isFinite(lng)
+    )
 
   ) {
 
-    return null;
+    return;
 
   }
 
@@ -1694,7 +1786,13 @@ function addMarker(find) {
 
   L.marker(
 
-    [lat, lng],
+    [
+
+      Number(find.lat),
+
+      Number(find.lng)
+
+    ],
 
     {
 
@@ -1725,8 +1823,6 @@ function addMarker(find) {
   find.marker =
 
   marker;
-
-  return marker;
 
 }
 
@@ -1765,8 +1861,6 @@ function startMap() {
     }
 
   );
-
-  /* GPS */
 
   if (
 
@@ -1842,7 +1936,7 @@ function startMap() {
 
         console.log(
 
-          "GPS error:",
+          "GPS:",
 
           error.message
 
@@ -1870,11 +1964,7 @@ function startMap() {
 
   }
 
-  /* =================================================
-
-     MAP CLICK
-
-  ================================================= */
+  /* MAP CLICK FOR PLACE FIND */
 
   map.on(
 
@@ -1930,13 +2020,13 @@ function startMap() {
 
           findIcon(),
 
-          zIndexOffset:
-
-          10000,
-
           interactive:
 
-          false
+          false,
+
+          zIndexOffset:
+
+          10000
 
         }
 
@@ -1954,14 +2044,6 @@ function startMap() {
 
       "none";
 
-      document.getElementById(
-
-        "map"
-
-      ).style.cursor =
-
-      "";
-
       openNewFind(
 
         lat,
@@ -1978,17 +2060,11 @@ function startMap() {
 
 /* =====================================================
 
-   OPEN NEW FIND
+   NEW FIND
 
 ===================================================== */
 
-function openNewFind(
-
-  lat,
-
-  lng
-
-) {
+function openNewFind(lat, lng) {
 
   editingFind =
 
@@ -1997,6 +2073,10 @@ function openNewFind(
   pendingPhoto =
 
   null;
+
+  pendingPhotoRemoved =
+
+  false;
 
   selectedLocation = {
 
@@ -2084,11 +2164,7 @@ function openNewFind(
 
   "Recorded: " +
 
-  formatDate(
-
-    new Date()
-
-  );
+  formatDate(new Date());
 
   const preview =
 
@@ -2103,6 +2179,22 @@ function openNewFind(
   "";
 
   preview.style.display =
+
+  "none";
+
+  document.getElementById(
+
+    "removePhoto"
+
+  ).style.display =
+
+  "none";
+
+  document.getElementById(
+
+    "deleteFind"
+
+  ).style.display =
 
   "none";
 
@@ -2124,14 +2216,6 @@ function openNewFind(
 
   document.getElementById(
 
-    "deleteFind"
-
-  ).style.display =
-
-  "none";
-
-  document.getElementById(
-
     "form"
 
   ).style.display =
@@ -2142,7 +2226,7 @@ function openNewFind(
 
 /* =====================================================
 
-   NORMAL GPS FIND
+   GPS FIND
 
 ===================================================== */
 
@@ -2178,7 +2262,7 @@ function() {
 
 /* =====================================================
 
-   PLACE FIND BUTTON
+   PLACE FIND
 
 ===================================================== */
 
@@ -2193,10 +2277,6 @@ function() {
   placingFind =
 
   true;
-
-  selectedLocation =
-
-  null;
 
   document.getElementById(
 
@@ -2233,10 +2313,6 @@ function() {
   placingFind =
 
   false;
-
-  selectedLocation =
-
-  null;
 
   document.getElementById(
 
@@ -2276,7 +2352,7 @@ function() {
 
 ===================================================== */
 
-function openFind(find) {
+async function openFind(find) {
 
   editingFind =
 
@@ -2285,6 +2361,10 @@ function openFind(find) {
   pendingPhoto =
 
   null;
+
+  pendingPhotoRemoved =
+
+  false;
 
   selectedLocation = {
 
@@ -2390,27 +2470,71 @@ function openFind(find) {
 
   );
 
-  if (find.photo) {
+  preview.src =
 
-    preview.src =
+  "";
 
-    find.photo;
+  preview.style.display =
 
-    preview.style.display =
+  "none";
 
-    "block";
+  document.getElementById(
+
+    "removePhoto"
+
+  ).style.display =
+
+  "none";
+
+  try {
+
+    if (find.id) {
+
+      const blob =
+
+      await getPhotoBlob(
+
+        find.id
+
+      );
+
+      if (blob) {
+
+        preview.src =
+
+        URL.createObjectURL(
+
+          blob
+
+        );
+
+        preview.style.display =
+
+        "block";
+
+        document.getElementById(
+
+          "removePhoto"
+
+        ).style.display =
+
+        "block";
+
+      }
+
+    }
 
   }
 
-  else {
+  catch(error) {
 
-    preview.src =
+    console.log(
 
-    "";
+      "Could not load photo:",
 
-    preview.style.display =
+      error
 
-    "none";
+    );
 
   }
 
@@ -2434,7 +2558,7 @@ function openFind(find) {
 
 /* =====================================================
 
-   SAVE FIND
+   SAVE
 
 ===================================================== */
 
@@ -2448,8 +2572,6 @@ async function saveFind() {
 
   );
 
-  /* Prevent double tapping */
-
   saveButton.disabled =
 
   true;
@@ -2459,12 +2581,6 @@ async function saveFind() {
   "SAVING...";
 
   try {
-
-    /* -----------------------------------------------
-
-       CHECK POSITION
-
-    ----------------------------------------------- */
 
     if (!selectedLocation) {
 
@@ -2512,12 +2628,6 @@ async function saveFind() {
 
     }
 
-    /* -----------------------------------------------
-
-       READ FORM
-
-    ----------------------------------------------- */
-
     const findText =
 
     document.getElementById(
@@ -2550,11 +2660,7 @@ async function saveFind() {
 
     ).value.trim();
 
-    /* -----------------------------------------------
-
-       EDIT EXISTING FIND
-
-    ----------------------------------------------- */
+    /* EDIT */
 
     if (editingFind) {
 
@@ -2574,27 +2680,47 @@ async function saveFind() {
 
       remarks;
 
-      if (pendingPhoto) {
+      editingFind.lat =
 
-        editingFind.photo =
+      lat;
 
-        pendingPhoto;
+      editingFind.lng =
 
-      }
+      lng;
 
-      await updateFindInDatabase(
+      await updateFind(
 
         editingFind
 
       );
 
-      /* Ensure marker exists */
-
       if (
 
-        !editingFind.marker
+        pendingPhotoRemoved
 
       ) {
+
+        await deletePhotoBlob(
+
+          editingFind.id
+
+        );
+
+      }
+
+      if (pendingPhoto) {
+
+        await savePhotoBlob(
+
+          editingFind.id,
+
+          pendingPhoto
+
+        );
+
+      }
+
+      if (!editingFind.marker) {
 
         addMarker(
 
@@ -2606,11 +2732,7 @@ async function saveFind() {
 
     }
 
-    /* -----------------------------------------------
-
-       NEW FIND
-
-    ----------------------------------------------- */
+    /* NEW FIND */
 
     else {
 
@@ -2650,17 +2772,13 @@ async function saveFind() {
 
           new Date()
 
-        ),
-
-        photo:
-
-        pendingPhoto || null
+        )
 
       };
 
       const savedFind =
 
-      await addFindToDatabase(
+      await addFind(
 
         newFind
 
@@ -2672,7 +2790,17 @@ async function saveFind() {
 
       );
 
-      /* Remove temporary marker */
+      if (pendingPhoto) {
+
+        await savePhotoBlob(
+
+          savedFind.id,
+
+          pendingPhoto
+
+        );
+
+      }
 
       if (temporaryMarker) {
 
@@ -2688,8 +2816,6 @@ async function saveFind() {
 
       }
 
-      /* Add permanent blue dot */
-
       addMarker(
 
         savedFind
@@ -2698,11 +2824,7 @@ async function saveFind() {
 
     }
 
-    /* -----------------------------------------------
-
-       CLOSE FORM
-
-    ----------------------------------------------- */
+    /* CLOSE */
 
     document.getElementById(
 
@@ -2712,28 +2834,6 @@ async function saveFind() {
 
     "none";
 
-    document.getElementById(
-
-      "findsPanel"
-
-    ).style.display =
-
-    "none";
-
-    document.getElementById(
-
-      "placeMessage"
-
-    ).style.display =
-
-    "none";
-
-    /* -----------------------------------------------
-
-       RESET
-
-    ----------------------------------------------- */
-
     editingFind =
 
     null;
@@ -2742,21 +2842,13 @@ async function saveFind() {
 
     null;
 
-    selectedLocation =
-
-    null;
-
-    placingFind =
+    pendingPhotoRemoved =
 
     false;
 
-    document.getElementById(
+    selectedLocation =
 
-      "map"
-
-    ).style.cursor =
-
-    "";
+    null;
 
     updateFindList();
 
@@ -2774,7 +2866,9 @@ async function saveFind() {
 
     alert(
 
-      "The find could not be saved.\n\nPlease try again."
+      "The find could not be saved.\n\n" +
+
+      "Please try again."
 
     );
 
@@ -2793,12 +2887,6 @@ async function saveFind() {
   }
 
 }
-
-/* =====================================================
-
-   SAVE BUTTON
-
-===================================================== */
 
 document.getElementById(
 
@@ -2822,7 +2910,7 @@ function(event) {
 
 /* =====================================================
 
-   CANCEL FORM
+   CANCEL
 
 ===================================================== */
 
@@ -2850,21 +2938,13 @@ function() {
 
   null;
 
-  selectedLocation =
-
-  null;
-
-  placingFind =
+  pendingPhotoRemoved =
 
   false;
 
-  document.getElementById(
+  selectedLocation =
 
-    "map"
-
-  ).style.cursor =
-
-  "";
+  null;
 
   if (temporaryMarker) {
 
@@ -2884,7 +2964,7 @@ function() {
 
 /* =====================================================
 
-   DELETE FIND
+   DELETE
 
 ===================================================== */
 
@@ -2902,17 +2982,13 @@ async function() {
 
   }
 
-  const number =
-
-  editingFind.number || "";
-
   if (
 
     !confirm(
 
       "Delete Find #" +
 
-      number +
+      editingFind.number +
 
       "?\n\n" +
 
@@ -2928,11 +3004,21 @@ async function() {
 
   try {
 
-    await deleteFindFromDatabase(
+    await deleteFind(
 
       editingFind
 
     );
+
+    if (editingFind.id) {
+
+      await deletePhotoBlob(
+
+        editingFind.id
+
+      );
+
+    }
 
     if (
 
@@ -2972,10 +3058,6 @@ async function() {
 
     null;
 
-    pendingPhoto =
-
-    null;
-
     selectedLocation =
 
     null;
@@ -2983,14 +3065,6 @@ async function() {
     document.getElementById(
 
       "form"
-
-    ).style.display =
-
-    "none";
-
-    document.getElementById(
-
-      "findsPanel"
 
     ).style.display =
 
@@ -3050,7 +3124,7 @@ function updateFindList() {
 
   }
 
-  const sortedFinds =
+  const sorted =
 
   [...finds].sort(
 
@@ -3068,7 +3142,7 @@ function updateFindList() {
 
   );
 
-  sortedFinds.forEach(
+  sorted.forEach(
 
     function(find) {
 
@@ -3116,13 +3190,13 @@ function updateFindList() {
 
       );
 
-      let detailText =
+      let text =
 
       "";
 
       if (find.material) {
 
-        detailText +=
+        text +=
 
         find.material;
 
@@ -3130,39 +3204,23 @@ function updateFindList() {
 
       if (find.era) {
 
-        if (detailText) {
+        if (text) {
 
-          detailText +=
+          text +=
 
           " · ";
 
         }
 
-        detailText +=
+        text +=
 
         find.era;
 
       }
 
-      if (find.photo) {
-
-        if (detailText) {
-
-          detailText +=
-
-          " · ";
-
-        }
-
-        detailText +=
-
-        "📷 Photo";
-
-      }
-
       details.innerText =
 
-      detailText;
+      text;
 
       item.appendChild(
 
@@ -3220,7 +3278,7 @@ function updateFindList() {
 
 /* =====================================================
 
-   FINDS BUTTON
+   FINDS PANEL
 
 ===================================================== */
 
@@ -3244,12 +3302,6 @@ function() {
 
 };
 
-/* =====================================================
-
-   CLOSE FINDS
-
-===================================================== */
-
 document.getElementById(
 
 "closeFinds"
@@ -3270,279 +3322,7 @@ function() {
 
 /* =====================================================
 
-   BACKUP
-
-===================================================== */
-
-document.getElementById(
-
-"backupButton"
-
-).onclick =
-
-async function() {
-
-  if (finds.length === 0) {
-
-    alert(
-
-      "There are no finds to back up yet."
-
-    );
-
-    return;
-
-  }
-
-  const backupData = {
-
-    app:
-
-    "Find Mapper",
-
-    version:
-
-    2,
-
-    backupDate:
-
-    new Date().toISOString(),
-
-    finds:
-
-    finds.map(
-
-      function(find) {
-
-        return {
-
-          number:
-
-          find.number || null,
-
-          find:
-
-          find.find || "",
-
-          material:
-
-          find.material || "",
-
-          era:
-
-          find.era || "",
-
-          remarks:
-
-          find.remarks || "",
-
-          lat:
-
-          find.lat || null,
-
-          lng:
-
-          find.lng || null,
-
-          recorded:
-
-          find.recorded || "",
-
-          photo:
-
-          find.photo || null
-
-        };
-
-      }
-
-    )
-
-  };
-
-  const json =
-
-  JSON.stringify(
-
-    backupData,
-
-    null,
-
-    2
-
-  );
-
-  const today =
-
-  new Date()
-
-  .toISOString()
-
-  .slice(0, 10);
-
-  const filename =
-
-  "FindMapper_Backup_" +
-
-  today +
-
-  ".json";
-
-  try {
-
-    if (
-
-      navigator.share &&
-
-      navigator.canShare
-
-    ) {
-
-      const file =
-
-      new File(
-
-        [json],
-
-        filename,
-
-        {
-
-          type:
-
-          "application/json"
-
-        }
-
-      );
-
-      if (
-
-        navigator.canShare({
-
-          files:
-
-          [file]
-
-        })
-
-      ) {
-
-        await navigator.share({
-
-          files:
-
-          [file],
-
-          title:
-
-          "Find Mapper Backup",
-
-          text:
-
-          "Backup of my Find Mapper records."
-
-        });
-
-        return;
-
-      }
-
-    }
-
-  }
-
-  catch(error) {
-
-    if (
-
-      error.name ===
-
-      "AbortError"
-
-    ) {
-
-      return;
-
-    }
-
-  }
-
-  const blob =
-
-  new Blob(
-
-    [json],
-
-    {
-
-      type:
-
-      "application/json"
-
-    }
-
-  );
-
-  const url =
-
-  URL.createObjectURL(
-
-    blob
-
-  );
-
-  const link =
-
-  document.createElement(
-
-    "a"
-
-  );
-
-  link.href =
-
-  url;
-
-  link.download =
-
-  filename;
-
-  document.body.appendChild(
-
-    link
-
-  );
-
-  link.click();
-
-  document.body.removeChild(
-
-    link
-
-  );
-
-  setTimeout(
-
-    function() {
-
-      URL.revokeObjectURL(
-
-        url
-
-      );
-
-    },
-
-    1000
-
-  );
-
-};
-
-/* =====================================================
-
-   CSV EXPORT
+   CSV
 
 ===================================================== */
 
@@ -3552,7 +3332,7 @@ document.getElementById(
 
 ).onclick =
 
-async function() {
+function() {
 
   if (finds.length === 0) {
 
@@ -3670,101 +3450,17 @@ async function() {
 
   );
 
-  const today =
+  const filename =
+
+  "FindMapper_Finds_" +
 
   new Date()
 
   .toISOString()
 
-  .slice(0, 10);
-
-  const filename =
-
-  "FindMapper_Finds_" +
-
-  today +
+  .slice(0,10) +
 
   ".csv";
-
-  try {
-
-    if (
-
-      navigator.share &&
-
-      navigator.canShare
-
-    ) {
-
-      const file =
-
-      new File(
-
-        [csv],
-
-        filename,
-
-        {
-
-          type:
-
-          "text/csv"
-
-        }
-
-      );
-
-      if (
-
-        navigator.canShare({
-
-          files:
-
-          [file]
-
-        })
-
-      ) {
-
-        await navigator.share({
-
-          files:
-
-          [file],
-
-          title:
-
-          "Find Mapper CSV Export",
-
-          text:
-
-          "Export of my Find Mapper records."
-
-        });
-
-        return;
-
-      }
-
-    }
-
-  }
-
-  catch(error) {
-
-    if (
-
-      error.name ===
-
-      "AbortError"
-
-    ) {
-
-      return;
-
-    }
-
-  }
 
   const blob =
 
@@ -3840,6 +3536,204 @@ async function() {
 
 /* =====================================================
 
+   BACKUP
+
+===================================================== */
+
+document.getElementById(
+
+"backupButton"
+
+).onclick =
+
+async function() {
+
+  if (finds.length === 0) {
+
+    alert(
+
+      "There are no finds to back up yet."
+
+    );
+
+    return;
+
+  }
+
+  /*
+
+     JSON backup contains the find information.
+
+     Photos remain safely stored in IndexedDB.
+
+  */
+
+  const backup = {
+
+    app:
+
+    "Find Mapper",
+
+    version:
+
+    3,
+
+    backupDate:
+
+    new Date().toISOString(),
+
+    finds:
+
+    finds.map(
+
+      function(find) {
+
+        return {
+
+          number:
+
+          find.number,
+
+          find:
+
+          find.find || "",
+
+          material:
+
+          find.material || "",
+
+          era:
+
+          find.era || "",
+
+          remarks:
+
+          find.remarks || "",
+
+          lat:
+
+          find.lat,
+
+          lng:
+
+          find.lng,
+
+          recorded:
+
+          find.recorded || ""
+
+        };
+
+      }
+
+    )
+
+  };
+
+  const json =
+
+  JSON.stringify(
+
+    backup,
+
+    null,
+
+    2
+
+  );
+
+  const filename =
+
+  "FindMapper_Backup_" +
+
+  new Date()
+
+  .toISOString()
+
+  .slice(0,10) +
+
+  ".json";
+
+  const blob =
+
+  new Blob(
+
+    [json],
+
+    {
+
+      type:
+
+      "application/json"
+
+    }
+
+  );
+
+  const url =
+
+  URL.createObjectURL(
+
+    blob
+
+  );
+
+  const link =
+
+  document.createElement(
+
+    "a"
+
+  );
+
+  link.href =
+
+  url;
+
+  link.download =
+
+  filename;
+
+  document.body.appendChild(
+
+    link
+
+  );
+
+  link.click();
+
+  document.body.removeChild(
+
+    link
+
+  );
+
+  setTimeout(
+
+    function() {
+
+      URL.revokeObjectURL(
+
+        url
+
+      );
+
+    },
+
+    1000
+
+  );
+
+  alert(
+
+    "Backup created successfully."
+
+  );
+
+};
+
+/* =====================================================
+
    START APPLICATION
 
 ===================================================== */
@@ -3850,9 +3744,131 @@ async function startApplication() {
 
     await openDatabase();
 
-    await migrateOldFinds();
+    /*
 
-    await loadFinds();
+       Load existing IndexedDB records.
+
+    */
+
+    finds =
+
+    await getAllFinds();
+
+    /*
+
+       If there are no records in the new
+
+       database, check the old localStorage
+
+       version and migrate records.
+
+    */
+
+    if (finds.length === 0) {
+
+      let oldFinds = [];
+
+      try {
+
+        oldFinds =
+
+        JSON.parse(
+
+          localStorage.getItem(
+
+            "finds"
+
+          ) || "[]"
+
+        );
+
+      }
+
+      catch(error) {
+
+        oldFinds =
+
+        [];
+
+      }
+
+      if (
+
+        Array.isArray(oldFinds) &&
+
+        oldFinds.length > 0
+
+      ) {
+
+        for (
+
+          let i = 0;
+
+          i < oldFinds.length;
+
+          i++
+
+        ) {
+
+          const old =
+
+          oldFinds[i];
+
+          const migrated = {
+
+            number:
+
+            old.number,
+
+            find:
+
+            old.find || "",
+
+            material:
+
+            old.material || "",
+
+            era:
+
+            old.era || "",
+
+            remarks:
+
+            old.remarks || "",
+
+            lat:
+
+            old.lat,
+
+            lng:
+
+            old.lng,
+
+            recorded:
+
+            old.recorded || ""
+
+          };
+
+          const saved =
+
+          await addFind(
+
+            migrated
+
+          );
+
+          finds.push(
+
+            saved
+
+          );
+
+        }
+
+      }
+
+    }
 
     startMap();
 
@@ -3864,7 +3880,7 @@ async function startApplication() {
 
     console.error(
 
-      "DATABASE ERROR:",
+      "START ERROR:",
 
       error
 
@@ -3872,7 +3888,9 @@ async function startApplication() {
 
     alert(
 
-      "Find Mapper could not open its storage.\n\nPlease reload the app and try again."
+      "Find Mapper could not start.\n\n" +
+
+      "Please reload the page."
 
     );
 
