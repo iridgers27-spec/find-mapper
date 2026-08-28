@@ -107,12 +107,19 @@ function startMap() {
 
   map = L.map("map").setView([51.35,0.75],16);
 
-  L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    {
-      attribution:"© OpenStreetMap"
-    }
-  ).addTo(map);
+ L.tileLayer(
+
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+
+  {
+
+    attribution:
+
+      "Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics"
+
+  }
+
+).addTo(map)
 
   finds.forEach(addMarker);
 
