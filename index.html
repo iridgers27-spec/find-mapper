@@ -188,6 +188,22 @@ button {
 
 }
 
+#deleteFind {
+
+  width: 100%;
+
+  background: #ff3b30;
+
+  color: white;
+
+  margin-top: 20px;
+
+  padding: 15px;
+
+  font-size: 17px;
+
+}
+
 #title {
 
   margin-top: 0;
@@ -467,6 +483,12 @@ SAVE
 <button id="cancel">
 
 CANCEL
+
+</button>
+
+<button id="deleteFind">
+
+🗑️ DELETE FIND
 
 </button>
 
@@ -1084,6 +1106,14 @@ function openFind(find) {
 
   document.getElementById(
 
+    "deleteFind"
+
+  ).style.display =
+
+  "block";
+
+  document.getElementById(
+
     "form"
 
   ).style.display =
@@ -1211,6 +1241,14 @@ function() {
     "libraryInput"
 
   ).value = "";
+
+  document.getElementById(
+
+    "deleteFind"
+
+  ).style.display =
+
+  "none";
 
   document.getElementById(
 
@@ -1384,6 +1422,112 @@ function() {
 
   null;
 
+  editingFind =
+
+  null;
+
+  updateFindList();
+
+};
+
+/* -------------------------
+
+   DELETE FIND
+
+------------------------- */
+
+document.getElementById(
+
+"deleteFind"
+
+).onclick =
+
+function() {
+
+  if (!editingFind) {
+
+    return;
+
+  }
+
+  const number =
+
+  editingFind.number ||
+
+  "unknown";
+
+  const confirmed =
+
+  confirm(
+
+    "Delete Find #" +
+
+    number +
+
+    "?\n\nThis cannot be undone unless you have a backup."
+
+  );
+
+  if (!confirmed) {
+
+    return;
+
+  }
+
+  if (editingFind.marker) {
+
+    map.removeLayer(
+
+      editingFind.marker
+
+    );
+
+  }
+
+  const index =
+
+  finds.indexOf(
+
+    editingFind
+
+  );
+
+  if (index !== -1) {
+
+    finds.splice(
+
+      index,
+
+      1
+
+    );
+
+  }
+
+  localStorage.setItem(
+
+    "finds",
+
+    JSON.stringify(finds)
+
+  );
+
+  editingFind =
+
+  null;
+
+  pendingPhoto =
+
+  null;
+
+  document.getElementById(
+
+    "form"
+
+  ).style.display =
+
+  "none";
+
   updateFindList();
 
 };
@@ -1411,6 +1555,10 @@ function() {
   "none";
 
   pendingPhoto =
+
+  null;
+
+  editingFind =
 
   null;
 
