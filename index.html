@@ -54,7 +54,7 @@ button {
 
 }
 
-/* FINDS */
+/* FINDS BUTTON */
 
 #findsButton {
 
@@ -458,13 +458,13 @@ textarea {
 
 }
 
-/* BLUE FIND MARKER */
+/* BLUE FIND DOT */
 
-.find-marker {
+.find-dot {
 
-  width: 18px;
+  width: 16px;
 
-  height: 18px;
+  height: 16px;
 
   background: #147ef5;
 
@@ -508,7 +508,7 @@ textarea {
 
 <div id="placeMessage">
 
-<strong>PLACE FIND</strong>
+PLACE FIND
 
 <br><br>
 
@@ -522,11 +522,7 @@ CANCEL
 
 </div>
 
-<!-- =========================
-
-     FIND FORM
-
-========================= -->
+<!-- FIND FORM -->
 
 <div id="form">
 
@@ -542,15 +538,27 @@ New Find
 
 <label>Find</label>
 
-<input id="find" autocomplete="off">
+<input
+
+id="find"
+
+autocomplete="off">
 
 <label>Material</label>
 
-<input id="material" autocomplete="off">
+<input
+
+id="material"
+
+autocomplete="off">
 
 <label>Date / Era</label>
 
-<input id="era" autocomplete="off">
+<input
+
+id="era"
+
+autocomplete="off">
 
 <label>Remarks</label>
 
@@ -632,11 +640,7 @@ CANCEL
 
 </div>
 
-<!-- =========================
-
-     FINDS PANEL
-
-========================= -->
+<!-- FINDS PANEL -->
 
 <div id="findsPanel">
 
@@ -676,11 +680,11 @@ src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
 
 <script>
 
-/* ==================================================
+/* =====================================================
 
    VARIABLES
 
-================================================== */
+===================================================== */
 
 let map = null;
 
@@ -704,11 +708,11 @@ localStorage.getItem("finds") || "[]"
 
 );
 
-/* ==================================================
+/* =====================================================
 
-   FIND NUMBER
+   NEXT FIND NUMBER
 
-================================================== */
+===================================================== */
 
 function nextFindNumber() {
 
@@ -736,11 +740,11 @@ function nextFindNumber() {
 
 }
 
-/* ==================================================
+/* =====================================================
 
    DATE
 
-================================================== */
+===================================================== */
 
 function formatDate(date) {
 
@@ -766,11 +770,11 @@ function formatDate(date) {
 
 }
 
-/* ==================================================
+/* =====================================================
 
-   PHOTO
+   PHOTO COMPRESSION
 
-================================================== */
+===================================================== */
 
 function compressPhoto(file) {
 
@@ -816,7 +820,9 @@ function compressPhoto(file) {
 
           }
 
-        } else {
+        }
+
+        else {
 
           if (height > maxSize) {
 
@@ -964,13 +970,13 @@ function(event) {
 
 });
 
-/* ==================================================
+/* =====================================================
 
-   BLUE FIND ICON
+   BLUE DOT ICON
 
-================================================== */
+===================================================== */
 
-function createFindIcon() {
+function findIcon() {
 
   return L.divIcon({
 
@@ -978,29 +984,89 @@ function createFindIcon() {
 
     html:
 
-    '<div class="find-marker"></div>',
+    '<div class="find-dot"></div>',
 
     iconSize:
 
-    [24, 24],
+    [22, 22],
 
     iconAnchor:
 
-    [12, 12],
-
-    popupAnchor:
-
-    [0, -12]
+    [11, 11]
 
   });
 
 }
 
-/* ==================================================
+/* =====================================================
 
-   MAP
+   ADD FIND MARKER
 
-================================================== */
+===================================================== */
+
+function addMarker(find) {
+
+  if (
+
+    find.lat === undefined ||
+
+    find.lng === undefined
+
+  ) {
+
+    return;
+
+  }
+
+  const marker =
+
+  L.marker(
+
+    [
+
+      Number(find.lat),
+
+      Number(find.lng)
+
+    ],
+
+    {
+
+      icon:
+
+      findIcon(),
+
+      zIndexOffset:
+
+      100
+
+    }
+
+  ).addTo(map);
+
+  marker.on(
+
+    "click",
+
+    function() {
+
+      openFind(find);
+
+    }
+
+  );
+
+  find.marker =
+
+  marker;
+
+}
+
+/* =====================================================
+
+   MAP START
+
+===================================================== */
 
 function startMap() {
 
@@ -1022,7 +1088,7 @@ function startMap() {
 
   ).addTo(map);
 
-  /* LOAD EXISTING FINDS */
+  /* EXISTING FINDS */
 
   finds.forEach(
 
@@ -1100,11 +1166,13 @@ function startMap() {
 
       },
 
-      function() {
+      function(error) {
 
         console.log(
 
-          "GPS unavailable."
+          "GPS error:",
+
+          error.message
 
         );
 
@@ -1124,237 +1192,131 @@ function startMap() {
 
   }
 
-}
+  /* =================================================
 
-/* ==================================================
-
-   ADD PERMANENT FIND MARKER
-
-================================================== */
-
-function addMarker(find) {
-
-  if (
-
-    find.lat === undefined ||
-
-    find.lng === undefined
-
-  ) {
-
-    return;
-
-  }
-
-  const marker =
-
-  L.marker(
-
-    [
-
-      Number(find.lat),
-
-      Number(find.lng)
-
-    ],
-
-    {
-
-      icon:
-
-      createFindIcon(),
-
-      zIndexOffset:
-
-      100
-
-    }
-
-  ).addTo(map);
-
-  marker.on(
-
-    "click",
-
-    function() {
-
-      openFind(find);
-
-    }
-
-  );
-
-  find.marker =
-
-  marker;
-
-}
-
-/* ==================================================
-
-   PLACE FIND BUTTON
-
-================================================== */
-
-document.getElementById(
-
-"placeFindButton"
-
-).onclick =
-
-function() {
-
-  placingFind =
-
-  true;
-
-  selectedLocation =
-
-  null;
-
-  document.getElementById(
-
-    "placeMessage"
-
-  ).style.display =
-
-  "block";
-
-  /* CHANGE CURSOR */
-
-  document.getElementById(
-
-    "map"
-
-  ).style.cursor =
-
-  "crosshair";
-
-};
-
-/* ==================================================
-
-   MAP CLICK
-
-================================================== */
-
-mapClickHandler =
-
-function(event) {
-
-  if (!placingFind) {
-
-    return;
-
-  }
-
-  const lat =
-
-  event.latlng.lat;
-
-  const lng =
-
-  event.latlng.lng;
-
-  selectedLocation = {
-
-    lat: lat,
-
-    lng: lng
-
-  };
-
-  /* ================================================
-
-     CREATE BLUE DOT IMMEDIATELY
+     MAP CLICK — PLACE FIND
 
   ================================================= */
 
-  if (temporaryMarker) {
+  map.on(
 
-    map.removeLayer(
+    "click",
 
-      temporaryMarker
+    function(event) {
 
-    );
+      if (!placingFind) {
 
-  }
+        return;
 
-  temporaryMarker =
+      }
 
-  L.marker(
+      const lat =
 
-    [lat, lng],
+      event.latlng.lat;
 
-    {
+      const lng =
 
-      icon:
+      event.latlng.lng;
 
-      createFindIcon(),
+      selectedLocation = {
 
-      zIndexOffset:
+        lat:
 
-      1000,
+        lat,
 
-      interactive:
+        lng:
 
-      false
+        lng
+
+      };
+
+      /* REMOVE OLD TEMPORARY DOT */
+
+      if (temporaryMarker) {
+
+        map.removeLayer(
+
+          temporaryMarker
+
+        );
+
+      }
+
+      /* CREATE BLUE DOT */
+
+      temporaryMarker =
+
+      L.marker(
+
+        [
+
+          lat,
+
+          lng
+
+        ],
+
+        {
+
+          icon:
+
+          findIcon(),
+
+          zIndexOffset:
+
+          10000,
+
+          interactive:
+
+          false
+
+        }
+
+      ).addTo(map);
+
+      /* STOP PLACEMENT */
+
+      placingFind =
+
+      false;
+
+      document.getElementById(
+
+        "placeMessage"
+
+      ).style.display =
+
+      "none";
+
+      document.getElementById(
+
+        "map"
+
+      ).style.cursor =
+
+      "";
+
+      /* OPEN FORM */
+
+      openNewFind(
+
+        lat,
+
+        lng
+
+      );
 
     }
 
-  ).addTo(map);
-
-  /* FORCE MAP TO SHOW THE MARKER */
-
-  temporaryMarker.bringToFront();
-
-  /* STOP PLACING */
-
-  placingFind =
-
-  false;
-
-  document.getElementById(
-
-    "placeMessage"
-
-  ).style.display =
-
-  "none";
-
-  document.getElementById(
-
-    "map"
-
-  ).style.cursor =
-
-  "";
-
-  /* OPEN FORM */
-
-  openNewFind(
-
-    lat,
-
-    lng
-
   );
 
-};
+}
 
-/*
+/* =====================================================
 
-   The handler is attached after the map
+   OPEN NEW FIND
 
-   has been created below.
-
-*/
-
-/* ==================================================
-
-   NEW FIND FORM
-
-================================================== */
+===================================================== */
 
 function openNewFind(
 
@@ -1502,11 +1464,11 @@ function openNewFind(
 
 }
 
-/* ==================================================
+/* =====================================================
 
-   GPS FIND
+   NORMAL GPS FIND
 
-================================================== */
+===================================================== */
 
 document.getElementById(
 
@@ -1550,11 +1512,47 @@ function() {
 
 };
 
-/* ==================================================
+/* =====================================================
 
-   CANCEL PLACEMENT
+   PLACE FIND BUTTON
 
-================================================== */
+===================================================== */
+
+document.getElementById(
+
+"placeFindButton"
+
+).onclick =
+
+function() {
+
+  placingFind =
+
+  true;
+
+  document.getElementById(
+
+    "placeMessage"
+
+  ).style.display =
+
+  "block";
+
+  document.getElementById(
+
+    "map"
+
+  ).style.cursor =
+
+  "crosshair";
+
+};
+
+/* =====================================================
+
+   CANCEL PLACE
+
+===================================================== */
 
 document.getElementById(
 
@@ -1604,283 +1602,11 @@ function() {
 
 };
 
-/* ==================================================
-
-   SAVE
-
-================================================== */
-
-document.getElementById(
-
-"save"
-
-).onclick =
-
-function() {
-
-  /* ================================================
-
-     EDIT EXISTING FIND
-
-  ================================================= */
-
-  if (editingFind) {
-
-    editingFind.find =
-
-    document.getElementById(
-
-      "find"
-
-    ).value;
-
-    editingFind.material =
-
-    document.getElementById(
-
-      "material"
-
-    ).value;
-
-    editingFind.era =
-
-    document.getElementById(
-
-      "era"
-
-    ).value;
-
-    editingFind.remarks =
-
-    document.getElementById(
-
-      "remarks"
-
-    ).value;
-
-    if (pendingPhoto) {
-
-      editingFind.photo =
-
-      pendingPhoto;
-
-    }
-
-    localStorage.setItem(
-
-      "finds",
-
-      JSON.stringify(finds)
-
-    );
-
-  }
-
-  /* ================================================
-
-     NEW FIND
-
-  ================================================= */
-
-  else {
-
-    if (!selectedLocation) {
-
-      alert(
-
-        "No map position has been selected."
-
-      );
-
-      return;
-
-    }
-
-    const newFind = {
-
-      number:
-
-      nextFindNumber(),
-
-      find:
-
-      document.getElementById(
-
-        "find"
-
-      ).value,
-
-      material:
-
-      document.getElementById(
-
-        "material"
-
-      ).value,
-
-      era:
-
-      document.getElementById(
-
-        "era"
-
-      ).value,
-
-      remarks:
-
-      document.getElementById(
-
-        "remarks"
-
-      ).value,
-
-      lat:
-
-      selectedLocation.lat,
-
-      lng:
-
-      selectedLocation.lng,
-
-      recorded:
-
-      formatDate(
-
-        new Date()
-
-      ),
-
-      photo:
-
-      pendingPhoto || null
-
-    };
-
-    finds.push(
-
-      newFind
-
-    );
-
-    localStorage.setItem(
-
-      "finds",
-
-      JSON.stringify(finds)
-
-    );
-
-    /*
-
-       REMOVE TEMPORARY MARKER
-
-       AND REPLACE IT WITH THE
-
-       PERMANENT SAVED MARKER.
-
-    */
-
-    if (temporaryMarker) {
-
-      map.removeLayer(
-
-        temporaryMarker
-
-      );
-
-      temporaryMarker =
-
-      null;
-
-    }
-
-    addMarker(
-
-      newFind
-
-    );
-
-  }
-
-  document.getElementById(
-
-    "form"
-
-  ).style.display =
-
-  "none";
-
-  pendingPhoto =
-
-  null;
-
-  editingFind =
-
-  null;
-
-  selectedLocation =
-
-  null;
-
-  updateFindList();
-
-};
-
-/* ==================================================
-
-   CANCEL FORM
-
-================================================== */
-
-document.getElementById(
-
-"cancel"
-
-).onclick =
-
-function() {
-
-  document.getElementById(
-
-    "form"
-
-  ).style.display =
-
-  "none";
-
-  pendingPhoto =
-
-  null;
-
-  editingFind =
-
-  null;
-
-  selectedLocation =
-
-  null;
-
-  if (temporaryMarker) {
-
-    map.removeLayer(
-
-      temporaryMarker
-
-    );
-
-    temporaryMarker =
-
-    null;
-
-  }
-
-};
-
-/* ==================================================
+/* =====================================================
 
    OPEN EXISTING FIND
 
-================================================== */
+===================================================== */
 
 function openFind(find) {
 
@@ -2026,11 +1752,261 @@ function openFind(find) {
 
 }
 
-/* ==================================================
+/* =====================================================
 
-   DELETE
+   SAVE
 
-================================================== */
+===================================================== */
+
+document.getElementById(
+
+"save"
+
+).onclick =
+
+function() {
+
+  if (editingFind) {
+
+    editingFind.find =
+
+    document.getElementById(
+
+      "find"
+
+    ).value;
+
+    editingFind.material =
+
+    document.getElementById(
+
+      "material"
+
+    ).value;
+
+    editingFind.era =
+
+    document.getElementById(
+
+      "era"
+
+    ).value;
+
+    editingFind.remarks =
+
+    document.getElementById(
+
+      "remarks"
+
+    ).value;
+
+    if (pendingPhoto) {
+
+      editingFind.photo =
+
+      pendingPhoto;
+
+    }
+
+    localStorage.setItem(
+
+      "finds",
+
+      JSON.stringify(finds)
+
+    );
+
+  }
+
+  else {
+
+    if (!selectedLocation) {
+
+      alert(
+
+        "No position has been selected."
+
+      );
+
+      return;
+
+    }
+
+    const newFind = {
+
+      number:
+
+      nextFindNumber(),
+
+      find:
+
+      document.getElementById(
+
+        "find"
+
+      ).value,
+
+      material:
+
+      document.getElementById(
+
+        "material"
+
+      ).value,
+
+      era:
+
+      document.getElementById(
+
+        "era"
+
+      ).value,
+
+      remarks:
+
+      document.getElementById(
+
+        "remarks"
+
+      ).value,
+
+      lat:
+
+      selectedLocation.lat,
+
+      lng:
+
+      selectedLocation.lng,
+
+      recorded:
+
+      formatDate(
+
+        new Date()
+
+      ),
+
+      photo:
+
+      pendingPhoto || null
+
+    };
+
+    finds.push(
+
+      newFind
+
+    );
+
+    localStorage.setItem(
+
+      "finds",
+
+      JSON.stringify(finds)
+
+    );
+
+    if (temporaryMarker) {
+
+      map.removeLayer(
+
+        temporaryMarker
+
+      );
+
+      temporaryMarker =
+
+      null;
+
+    }
+
+    addMarker(
+
+      newFind
+
+    );
+
+  }
+
+  document.getElementById(
+
+    "form"
+
+  ).style.display =
+
+  "none";
+
+  editingFind =
+
+  null;
+
+  pendingPhoto =
+
+  null;
+
+  selectedLocation =
+
+  null;
+
+  updateFindList();
+
+};
+
+/* =====================================================
+
+   CANCEL FORM
+
+===================================================== */
+
+document.getElementById(
+
+"cancel"
+
+).onclick =
+
+function() {
+
+  document.getElementById(
+
+    "form"
+
+  ).style.display =
+
+  "none";
+
+  editingFind =
+
+  null;
+
+  pendingPhoto =
+
+  null;
+
+  selectedLocation =
+
+  null;
+
+  if (temporaryMarker) {
+
+    map.removeLayer(
+
+      temporaryMarker
+
+    );
+
+    temporaryMarker =
+
+    null;
+
+  }
+
+};
+
+/* =====================================================
+
+   DELETE FIND
+
+===================================================== */
 
 document.getElementById(
 
@@ -2046,21 +2022,19 @@ function() {
 
   }
 
-  const confirmed =
+  if (
 
-  confirm(
+    !confirm(
 
-    "Delete Find #" +
+      "Delete Find #" +
 
-    (editingFind.number || "") +
+      (editingFind.number || "") +
 
-    "?\n\n" +
+      "?\n\nThis cannot be undone unless you have a backup."
 
-    "This cannot be undone unless you have a backup."
+    )
 
-  );
-
-  if (!confirmed) {
+  ) {
 
     return;
 
@@ -2112,10 +2086,6 @@ function() {
 
   null;
 
-  pendingPhoto =
-
-  null;
-
   document.getElementById(
 
     "form"
@@ -2128,11 +2098,11 @@ function() {
 
 };
 
-/* ==================================================
+/* =====================================================
 
    FIND LIST
 
-================================================== */
+===================================================== */
 
 function updateFindList() {
 
@@ -2166,17 +2136,9 @@ function updateFindList() {
 
       return (
 
-        Number(
+        Number(a.number || 0) -
 
-          a.number || 0
-
-        ) -
-
-        Number(
-
-          b.number || 0
-
-        )
+        Number(b.number || 0)
 
       );
 
@@ -2334,11 +2296,11 @@ function updateFindList() {
 
 }
 
-/* ==================================================
+/* =====================================================
 
    FINDS PANEL
 
-================================================== */
+===================================================== */
 
 document.getElementById(
 
@@ -2378,11 +2340,11 @@ function() {
 
 };
 
-/* ==================================================
+/* =====================================================
 
    BACKUP
 
-================================================== */
+===================================================== */
 
 document.getElementById(
 
@@ -2646,11 +2608,11 @@ async function() {
 
 };
 
-/* ==================================================
+/* =====================================================
 
    CSV EXPORT
 
-================================================== */
+===================================================== */
 
 document.getElementById(
 
@@ -2944,33 +2906,13 @@ async function() {
 
 };
 
-/* ==================================================
+/* =====================================================
 
-   START MAP
+   START
 
-================================================== */
+===================================================== */
 
 startMap();
-
-/* ==================================================
-
-   ATTACH MAP CLICK HANDLER
-
-================================================== */
-
-map.on(
-
-  "click",
-
-  mapClickHandler
-
-);
-
-/* ==================================================
-
-   START FIND LIST
-
-================================================== */
 
 updateFindList();
 
