@@ -54,7 +54,11 @@ button {
 
 }
 
-/* FINDS BUTTON */
+/* =====================================================
+
+   MAP BUTTONS
+
+===================================================== */
 
 #findsButton {
 
@@ -71,8 +75,6 @@ button {
   box-shadow: 0 2px 8px #555;
 
 }
-
-/* BOTTOM BUTTONS */
 
 #findButtons {
 
@@ -124,7 +126,11 @@ button {
 
 }
 
-/* PLACE MESSAGE */
+/* =====================================================
+
+   PLACE FIND MESSAGE
+
+===================================================== */
 
 #placeMessage {
 
@@ -166,7 +172,11 @@ button {
 
 }
 
-/* FORM AND FINDS */
+/* =====================================================
+
+   FORM
+
+===================================================== */
 
 #form,
 
@@ -326,6 +336,8 @@ textarea {
 
   background: #ddd;
 
+  color: #111;
+
   width: 100%;
 
   margin-top: 8px;
@@ -344,7 +356,11 @@ textarea {
 
 }
 
-/* PHOTO */
+/* =====================================================
+
+   PHOTO
+
+===================================================== */
 
 #photoButtons {
 
@@ -396,7 +412,11 @@ textarea {
 
 }
 
-/* FIND LIST */
+/* =====================================================
+
+   FIND LIST
+
+===================================================== */
 
 .findItem {
 
@@ -432,7 +452,11 @@ textarea {
 
 }
 
-/* EXPORT */
+/* =====================================================
+
+   EXPORT BUTTONS
+
+===================================================== */
 
 #backupButton,
 
@@ -464,7 +488,11 @@ textarea {
 
 }
 
-/* BLUE FIND DOT */
+/* =====================================================
+
+   BLUE FIND DOT
+
+===================================================== */
 
 .find-dot {
 
@@ -528,7 +556,11 @@ CANCEL
 
 </div>
 
-<!-- FIND FORM -->
+<!-- =====================================================
+
+     FIND FORM
+
+===================================================== -->
 
 <div id="form">
 
@@ -626,7 +658,9 @@ id="photoPreview">
 
 <div id="recorded"></div>
 
-<button id="save"
+<button
+
+id="save"
 
 type="button">
 
@@ -634,7 +668,9 @@ SAVE
 
 </button>
 
-<button id="cancel"
+<button
+
+id="cancel"
 
 type="button">
 
@@ -642,7 +678,9 @@ CANCEL
 
 </button>
 
-<button id="deleteFind"
+<button
+
+id="deleteFind"
 
 type="button">
 
@@ -652,11 +690,17 @@ type="button">
 
 </div>
 
-<!-- FINDS PANEL -->
+<!-- =====================================================
+
+     FINDS PANEL
+
+===================================================== -->
 
 <div id="findsPanel">
 
-<button id="closeFinds"
+<button
+
+id="closeFinds"
 
 type="button">
 
@@ -672,7 +716,9 @@ My Finds
 
 <div id="findList"></div>
 
-<button id="backupButton"
+<button
+
+id="backupButton"
 
 type="button">
 
@@ -680,7 +726,9 @@ type="button">
 
 </button>
 
-<button id="csvButton"
+<button
+
+id="csvButton"
 
 type="button">
 
@@ -700,7 +748,7 @@ src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
 
 /* =====================================================
 
-   VARIABLES
+   GLOBAL VARIABLES
 
 ===================================================== */
 
@@ -722,83 +770,497 @@ let finds = [];
 
 /* =====================================================
 
-   LOAD FINDS SAFELY
+   INDEXED DB
 
 ===================================================== */
 
-try {
+const DB_NAME =
 
-  finds =
+"FindMapperDatabase";
 
-  JSON.parse(
+const DB_VERSION = 1;
 
-    localStorage.getItem("finds") || "[]"
+const STORE_NAME =
+
+"finds";
+
+let db = null;
+
+/* =====================================================
+
+   OPEN DATABASE
+
+===================================================== */
+
+function openDatabase() {
+
+  return new Promise(
+
+    function(resolve, reject) {
+
+      const request =
+
+      indexedDB.open(
+
+        DB_NAME,
+
+        DB_VERSION
+
+      );
+
+      request.onupgradeneeded =
+
+      function(event) {
+
+        const database =
+
+        event.target.result;
+
+        if (
+
+          !database.objectStoreNames.contains(
+
+            STORE_NAME
+
+          )
+
+        ) {
+
+          database.createObjectStore(
+
+            STORE_NAME,
+
+            {
+
+              keyPath:
+
+              "id",
+
+              autoIncrement:
+
+              true
+
+            }
+
+          );
+
+        }
+
+      };
+
+      request.onsuccess =
+
+      function(event) {
+
+        db =
+
+        event.target.result;
+
+        resolve(db);
+
+      };
+
+      request.onerror =
+
+      function(event) {
+
+        reject(
+
+          event.target.error
+
+        );
+
+      };
+
+    }
 
   );
-
-  if (!Array.isArray(finds)) {
-
-    finds = [];
-
-  }
-
-}
-
-catch (error) {
-
-  console.log(
-
-    "Could not load saved finds.",
-
-    error
-
-  );
-
-  finds = [];
 
 }
 
 /* =====================================================
 
-   SAVE ALL FINDS
+   GET ALL FINDS
 
 ===================================================== */
 
-function saveAllFinds() {
+function getAllFinds() {
+
+  return new Promise(
+
+    function(resolve, reject) {
+
+      const transaction =
+
+      db.transaction(
+
+        STORE_NAME,
+
+        "readonly"
+
+      );
+
+      const store =
+
+      transaction.objectStore(
+
+        STORE_NAME
+
+      );
+
+      const request =
+
+      store.getAll();
+
+      request.onsuccess =
+
+      function() {
+
+        resolve(
+
+          request.result || []
+
+        );
+
+      };
+
+      request.onerror =
+
+      function() {
+
+        reject(
+
+          request.error
+
+        );
+
+      };
+
+    }
+
+  );
+
+}
+
+/* =====================================================
+
+   ADD FIND
+
+===================================================== */
+
+function addFindToDatabase(find) {
+
+  return new Promise(
+
+    function(resolve, reject) {
+
+      const transaction =
+
+      db.transaction(
+
+        STORE_NAME,
+
+        "readwrite"
+
+      );
+
+      const store =
+
+      transaction.objectStore(
+
+        STORE_NAME
+
+      );
+
+      const request =
+
+      store.add(find);
+
+      request.onsuccess =
+
+      function() {
+
+        find.id =
+
+        request.result;
+
+        resolve(find);
+
+      };
+
+      request.onerror =
+
+      function() {
+
+        reject(
+
+          request.error
+
+        );
+
+      };
+
+    }
+
+  );
+
+}
+
+/* =====================================================
+
+   UPDATE FIND
+
+===================================================== */
+
+function updateFindInDatabase(find) {
+
+  return new Promise(
+
+    function(resolve, reject) {
+
+      const transaction =
+
+      db.transaction(
+
+        STORE_NAME,
+
+        "readwrite"
+
+      );
+
+      const store =
+
+      transaction.objectStore(
+
+        STORE_NAME
+
+      );
+
+      const request =
+
+      store.put(find);
+
+      request.onsuccess =
+
+      function() {
+
+        resolve(find);
+
+      };
+
+      request.onerror =
+
+      function() {
+
+        reject(
+
+          request.error
+
+        );
+
+      };
+
+    }
+
+  );
+
+}
+
+/* =====================================================
+
+   DELETE FIND FROM DATABASE
+
+===================================================== */
+
+function deleteFindFromDatabase(find) {
+
+  return new Promise(
+
+    function(resolve, reject) {
+
+      const transaction =
+
+      db.transaction(
+
+        STORE_NAME,
+
+        "readwrite"
+
+      );
+
+      const store =
+
+      transaction.objectStore(
+
+        STORE_NAME
+
+      );
+
+      const request =
+
+      store.delete(find.id);
+
+      request.onsuccess =
+
+      function() {
+
+        resolve();
+
+      };
+
+      request.onerror =
+
+      function() {
+
+        reject(
+
+          request.error
+
+        );
+
+      };
+
+    }
+
+  );
+
+}
+
+/* =====================================================
+
+   MIGRATE OLD LOCALSTORAGE DATA
+
+===================================================== */
+
+async function migrateOldFinds() {
+
+  let oldFinds = [];
 
   try {
 
-    localStorage.setItem(
+    oldFinds =
 
-      "finds",
+    JSON.parse(
 
-      JSON.stringify(finds)
+      localStorage.getItem("finds") || "[]"
 
     );
-
-    return true;
 
   }
 
-  catch (error) {
+  catch(error) {
 
-    console.error(
-
-      "Save error:",
-
-      error
-
-    );
-
-    alert(
-
-      "The find could not be saved. Your phone may be out of storage."
-
-    );
-
-    return false;
+    oldFinds = [];
 
   }
+
+  if (
+
+    !Array.isArray(oldFinds) ||
+
+    oldFinds.length === 0
+
+  ) {
+
+    return;
+
+  }
+
+  const existing =
+
+  await getAllFinds();
+
+  if (existing.length > 0) {
+
+    return;
+
+  }
+
+  for (
+
+    let i = 0;
+
+    i < oldFinds.length;
+
+    i++
+
+  ) {
+
+    const oldFind =
+
+    oldFinds[i];
+
+    const newFind = {
+
+      number:
+
+      oldFind.number,
+
+      find:
+
+      oldFind.find || "",
+
+      material:
+
+      oldFind.material || "",
+
+      era:
+
+      oldFind.era || "",
+
+      remarks:
+
+      oldFind.remarks || "",
+
+      lat:
+
+      oldFind.lat,
+
+      lng:
+
+      oldFind.lng,
+
+      recorded:
+
+      oldFind.recorded || "",
+
+      photo:
+
+      oldFind.photo || null
+
+    };
+
+    await addFindToDatabase(
+
+      newFind
+
+    );
+
+  }
+
+  /*
+
+     Keep the old data for now.
+
+     It is deliberately NOT deleted.
+
+     This gives us an extra safety copy.
+
+  */
+
+}
+
+/* =====================================================
+
+   LOAD DATABASE
+
+===================================================== */
+
+async function loadFinds() {
+
+  finds =
+
+  await getAllFinds();
 
 }
 
@@ -900,7 +1362,9 @@ function compressPhoto(file) {
 
         function() {
 
-          const maxSize = 1200;
+          const maxSize =
+
+          1200;
 
           let width =
 
@@ -912,11 +1376,19 @@ function compressPhoto(file) {
 
           if (width > height) {
 
-            if (width > maxSize) {
+            if (
+
+              width > maxSize
+
+            ) {
 
               height =
 
-              height * maxSize / width;
+              height *
+
+              maxSize /
+
+              width;
 
               width =
 
@@ -928,11 +1400,19 @@ function compressPhoto(file) {
 
           else {
 
-            if (height > maxSize) {
+            if (
+
+              height > maxSize
+
+            ) {
 
               width =
 
-              width * maxSize / height;
+              width *
+
+              maxSize /
+
+              height;
 
               height =
 
@@ -1002,7 +1482,7 @@ function compressPhoto(file) {
 
             new Error(
 
-              "Could not read image."
+              "Could not load photo."
 
             )
 
@@ -1032,13 +1512,23 @@ function compressPhoto(file) {
 
       };
 
-      reader.readAsDataURL(file);
+      reader.readAsDataURL(
+
+        file
+
+      );
 
     }
 
   );
 
 }
+
+/* =====================================================
+
+   HANDLE PHOTO
+
+===================================================== */
 
 function handlePhoto(file) {
 
@@ -1134,7 +1624,7 @@ function(event) {
 
 /* =====================================================
 
-   BLUE FIND ICON
+   BLUE DOT ICON
 
 ===================================================== */
 
@@ -1162,7 +1652,7 @@ function findIcon() {
 
 /* =====================================================
 
-   ADD MARKER
+   ADD MAP MARKER
 
 ===================================================== */
 
@@ -1266,8 +1756,6 @@ function startMap() {
 
   ).addTo(map);
 
-  /* ADD EXISTING FIND DOTS */
-
   finds.forEach(
 
     function(find) {
@@ -1316,7 +1804,9 @@ function startMap() {
 
               color: "white",
 
-              fillColor: "#147ef5",
+              fillColor:
+
+              "#147ef5",
 
               fillOpacity: 1
 
@@ -1362,11 +1852,17 @@ function startMap() {
 
       {
 
-        enableHighAccuracy: true,
+        enableHighAccuracy:
 
-        maximumAge: 10000,
+        true,
 
-        timeout: 15000
+        maximumAge:
+
+        10000,
+
+        timeout:
+
+        15000
 
       }
 
@@ -1374,19 +1870,11 @@ function startMap() {
 
   }
 
-  else {
+  /* =================================================
 
-    map.setView(
+     MAP CLICK
 
-      [51.45, 0.75],
-
-      13
-
-    );
-
-  }
-
-  /* MAP CLICK */
+  ================================================= */
 
   map.on(
 
@@ -1420,8 +1908,6 @@ function startMap() {
 
       };
 
-      /* REMOVE OLD TEMPORARY DOT */
-
       if (temporaryMarker) {
 
         map.removeLayer(
@@ -1431,8 +1917,6 @@ function startMap() {
         );
 
       }
-
-      /* SHOW BLUE DOT IMMEDIATELY */
 
       temporaryMarker =
 
@@ -1477,8 +1961,6 @@ function startMap() {
       ).style.cursor =
 
       "";
-
-      /* OPEN FORM */
 
       openNewFind(
 
@@ -1696,7 +2178,7 @@ function() {
 
 /* =====================================================
 
-   PLACE FIND
+   PLACE FIND BUTTON
 
 ===================================================== */
 
@@ -1952,323 +2434,363 @@ function openFind(find) {
 
 /* =====================================================
 
-   SAVE FIND — CORRECTED
+   SAVE FIND
 
 ===================================================== */
 
-function saveFind() {
+async function saveFind() {
 
-  /* -----------------------------------------------
-
-     CHECK POSITION
-
-  ----------------------------------------------- */
-
-  if (!selectedLocation) {
-
-    alert(
-
-      "No position has been selected."
-
-    );
-
-    return false;
-
-  }
-
-  const lat =
-
-  Number(selectedLocation.lat);
-
-  const lng =
-
-  Number(selectedLocation.lng);
-
-  if (
-
-    !Number.isFinite(lat) ||
-
-    !Number.isFinite(lng)
-
-  ) {
-
-    alert(
-
-      "The position is not valid."
-
-    );
-
-    return false;
-
-  }
-
-  /* -----------------------------------------------
-
-     READ FORM
-
-  ----------------------------------------------- */
-
-  const findText =
+  const saveButton =
 
   document.getElementById(
 
-    "find"
+    "save"
 
-  ).value;
+  );
 
-  const material =
+  /* Prevent double tapping */
 
-  document.getElementById(
+  saveButton.disabled =
 
-    "material"
+  true;
 
-  ).value;
+  saveButton.innerText =
 
-  const era =
+  "SAVING...";
 
-  document.getElementById(
+  try {
 
-    "era"
+    /* -----------------------------------------------
 
-  ).value;
+       CHECK POSITION
 
-  const remarks =
+    ----------------------------------------------- */
 
-  document.getElementById(
+    if (!selectedLocation) {
 
-    "remarks"
+      alert(
 
-  ).value;
+        "No position has been selected."
 
-  /* -----------------------------------------------
+      );
 
-     EDIT EXISTING FIND
-
-  ----------------------------------------------- */
-
-  if (editingFind) {
-
-    editingFind.find =
-
-    findText;
-
-    editingFind.material =
-
-    material;
-
-    editingFind.era =
-
-    era;
-
-    editingFind.remarks =
-
-    remarks;
-
-    /*
-
-       Keep the original position.
-
-       This means editing a find cannot accidentally
-
-       change its saved coordinates.
-
-    */
-
-    if (pendingPhoto) {
-
-      editingFind.photo =
-
-      pendingPhoto;
+      return;
 
     }
 
-    if (!saveAllFinds()) {
+    const lat =
 
-      return false;
+    Number(
 
-    }
+      selectedLocation.lat
 
-    /* Make sure the marker is still there */
+    );
+
+    const lng =
+
+    Number(
+
+      selectedLocation.lng
+
+    );
 
     if (
 
-      !editingFind.marker
+      !Number.isFinite(lat) ||
+
+      !Number.isFinite(lng)
 
     ) {
 
-      addMarker(
+      alert(
+
+        "The position is not valid."
+
+      );
+
+      return;
+
+    }
+
+    /* -----------------------------------------------
+
+       READ FORM
+
+    ----------------------------------------------- */
+
+    const findText =
+
+    document.getElementById(
+
+      "find"
+
+    ).value.trim();
+
+    const material =
+
+    document.getElementById(
+
+      "material"
+
+    ).value.trim();
+
+    const era =
+
+    document.getElementById(
+
+      "era"
+
+    ).value.trim();
+
+    const remarks =
+
+    document.getElementById(
+
+      "remarks"
+
+    ).value.trim();
+
+    /* -----------------------------------------------
+
+       EDIT EXISTING FIND
+
+    ----------------------------------------------- */
+
+    if (editingFind) {
+
+      editingFind.find =
+
+      findText;
+
+      editingFind.material =
+
+      material;
+
+      editingFind.era =
+
+      era;
+
+      editingFind.remarks =
+
+      remarks;
+
+      if (pendingPhoto) {
+
+        editingFind.photo =
+
+        pendingPhoto;
+
+      }
+
+      await updateFindInDatabase(
 
         editingFind
 
       );
 
-    }
+      /* Ensure marker exists */
 
-  }
+      if (
 
-  /* -----------------------------------------------
+        !editingFind.marker
 
-     CREATE NEW FIND
+      ) {
 
-  ----------------------------------------------- */
+        addMarker(
 
-  else {
+          editingFind
 
-    const newFind = {
+        );
 
-      number:
-
-      nextFindNumber(),
-
-      find:
-
-      findText,
-
-      material:
-
-      material,
-
-      era:
-
-      era,
-
-      remarks:
-
-      remarks,
-
-      lat:
-
-      lat,
-
-      lng:
-
-      lng,
-
-      recorded:
-
-      formatDate(
-
-        new Date()
-
-      ),
-
-      photo:
-
-      pendingPhoto || null
-
-    };
-
-    finds.push(
-
-      newFind
-
-    );
-
-    if (!saveAllFinds()) {
-
-      /* Undo if saving failed */
-
-      finds.pop();
-
-      return false;
+      }
 
     }
 
-    /* Remove temporary dot */
+    /* -----------------------------------------------
 
-    if (temporaryMarker) {
+       NEW FIND
 
-      map.removeLayer(
+    ----------------------------------------------- */
 
-        temporaryMarker
+    else {
+
+      const newFind = {
+
+        number:
+
+        nextFindNumber(),
+
+        find:
+
+        findText,
+
+        material:
+
+        material,
+
+        era:
+
+        era,
+
+        remarks:
+
+        remarks,
+
+        lat:
+
+        lat,
+
+        lng:
+
+        lng,
+
+        recorded:
+
+        formatDate(
+
+          new Date()
+
+        ),
+
+        photo:
+
+        pendingPhoto || null
+
+      };
+
+      const savedFind =
+
+      await addFindToDatabase(
+
+        newFind
 
       );
 
-      temporaryMarker =
+      finds.push(
 
-      null;
+        savedFind
+
+      );
+
+      /* Remove temporary marker */
+
+      if (temporaryMarker) {
+
+        map.removeLayer(
+
+          temporaryMarker
+
+        );
+
+        temporaryMarker =
+
+        null;
+
+      }
+
+      /* Add permanent blue dot */
+
+      addMarker(
+
+        savedFind
+
+      );
 
     }
 
-    /* Add permanent blue dot */
+    /* -----------------------------------------------
 
-    addMarker(
+       CLOSE FORM
 
-      newFind
+    ----------------------------------------------- */
+
+    document.getElementById(
+
+      "form"
+
+    ).style.display =
+
+    "none";
+
+    document.getElementById(
+
+      "findsPanel"
+
+    ).style.display =
+
+    "none";
+
+    document.getElementById(
+
+      "placeMessage"
+
+    ).style.display =
+
+    "none";
+
+    /* -----------------------------------------------
+
+       RESET
+
+    ----------------------------------------------- */
+
+    editingFind =
+
+    null;
+
+    pendingPhoto =
+
+    null;
+
+    selectedLocation =
+
+    null;
+
+    placingFind =
+
+    false;
+
+    document.getElementById(
+
+      "map"
+
+    ).style.cursor =
+
+    "";
+
+    updateFindList();
+
+  }
+
+  catch(error) {
+
+    console.error(
+
+      "SAVE ERROR:",
+
+      error
+
+    );
+
+    alert(
+
+      "The find could not be saved.\n\nPlease try again."
 
     );
 
   }
 
-  /* -----------------------------------------------
+  finally {
 
-     CLOSE EVERYTHING
+    saveButton.disabled =
 
-  ----------------------------------------------- */
+    false;
 
-  document.getElementById(
+    saveButton.innerText =
 
-    "form"
+    "SAVE";
 
-  ).style.display =
-
-  "none";
-
-  document.getElementById(
-
-    "findsPanel"
-
-  ).style.display =
-
-  "none";
-
-  document.getElementById(
-
-    "placeMessage"
-
-  ).style.display =
-
-  "none";
-
-  /* -----------------------------------------------
-
-     RESET STATE
-
-  ----------------------------------------------- */
-
-  editingFind =
-
-  null;
-
-  pendingPhoto =
-
-  null;
-
-  selectedLocation =
-
-  null;
-
-  placingFind =
-
-  false;
-
-  document.getElementById(
-
-    "map"
-
-  ).style.cursor =
-
-  "";
-
-  /* -----------------------------------------------
-
-     REFRESH LIST
-
-  ----------------------------------------------- */
-
-  updateFindList();
-
-  return true;
+  }
 
 }
 
@@ -2372,7 +2894,7 @@ document.getElementById(
 
 ).onclick =
 
-function() {
+async function() {
 
   if (!editingFind) {
 
@@ -2404,75 +2926,97 @@ function() {
 
   }
 
-  if (
+  try {
 
-    editingFind.marker
+    await deleteFindFromDatabase(
 
-  ) {
+      editingFind
 
-    map.removeLayer(
+    );
+
+    if (
 
       editingFind.marker
 
-    );
+    ) {
 
-  }
+      map.removeLayer(
 
-  const index =
+        editingFind.marker
 
-  finds.indexOf(
+      );
 
-    editingFind
+    }
 
-  );
+    const index =
 
-  if (index !== -1) {
+    finds.indexOf(
 
-    finds.splice(
-
-      index,
-
-      1
+      editingFind
 
     );
 
+    if (index !== -1) {
+
+      finds.splice(
+
+        index,
+
+        1
+
+      );
+
+    }
+
+    editingFind =
+
+    null;
+
+    pendingPhoto =
+
+    null;
+
+    selectedLocation =
+
+    null;
+
+    document.getElementById(
+
+      "form"
+
+    ).style.display =
+
+    "none";
+
+    document.getElementById(
+
+      "findsPanel"
+
+    ).style.display =
+
+    "none";
+
+    updateFindList();
+
   }
 
-  if (!saveAllFinds()) {
+  catch(error) {
 
-    return;
+    console.error(
+
+      "DELETE ERROR:",
+
+      error
+
+    );
+
+    alert(
+
+      "The find could not be deleted."
+
+    );
 
   }
-
-  editingFind =
-
-  null;
-
-  pendingPhoto =
-
-  null;
-
-  selectedLocation =
-
-  null;
-
-  document.getElementById(
-
-    "form"
-
-  ).style.display =
-
-  "none";
-
-  document.getElementById(
-
-    "findsPanel"
-
-  ).style.display =
-
-  "none";
-
-  updateFindList();
 
 };
 
@@ -2644,37 +3188,19 @@ function updateFindList() {
 
         "none";
 
-        if (
+        map.setView(
 
-          Number.isFinite(
+          [
 
-            Number(find.lat)
-
-          ) &&
-
-          Number.isFinite(
+            Number(find.lat),
 
             Number(find.lng)
 
-          )
+          ],
 
-        ) {
+          19
 
-          map.setView(
-
-            [
-
-              Number(find.lat),
-
-              Number(find.lng)
-
-            ],
-
-            19
-
-          );
-
-        }
+        );
 
         openFind(find);
 
@@ -2773,6 +3299,10 @@ async function() {
     app:
 
     "Find Mapper",
+
+    version:
+
+    2,
 
     backupDate:
 
@@ -2922,7 +3452,7 @@ async function() {
 
   }
 
-  catch (error) {
+  catch(error) {
 
     if (
 
@@ -3220,7 +3750,7 @@ async function() {
 
   }
 
-  catch (error) {
+  catch(error) {
 
     if (
 
@@ -3314,9 +3844,43 @@ async function() {
 
 ===================================================== */
 
-startMap();
+async function startApplication() {
 
-updateFindList();
+  try {
+
+    await openDatabase();
+
+    await migrateOldFinds();
+
+    await loadFinds();
+
+    startMap();
+
+    updateFindList();
+
+  }
+
+  catch(error) {
+
+    console.error(
+
+      "DATABASE ERROR:",
+
+      error
+
+    );
+
+    alert(
+
+      "Find Mapper could not open its storage.\n\nPlease reload the app and try again."
+
+    );
+
+  }
+
+}
+
+startApplication();
 
 </script>
 
