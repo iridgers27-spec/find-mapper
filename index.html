@@ -172,6 +172,22 @@ button {
 
 }
 
+#csvButton {
+
+  width: 100%;
+
+  background: #147ef5;
+
+  color: white;
+
+  margin-top: 10px;
+
+  padding: 15px;
+
+  font-size: 17px;
+
+}
+
 #title {
 
   margin-top: 0;
@@ -480,6 +496,12 @@ My Finds
 
 </button>
 
+<button id="csvButton">
+
+📊 EXPORT TO CSV
+
+</button>
+
 </div>
 
 <script
@@ -526,7 +548,9 @@ function nextFindNumber() {
 
     ) {
 
-      highest = Number(find.number);
+      highest =
+
+      Number(find.number);
 
     }
 
@@ -576,19 +600,31 @@ function compressPhoto(file) {
 
   return new Promise(function(resolve) {
 
-    const reader = new FileReader();
+    const reader =
 
-    reader.onload = function(event) {
+    new FileReader();
 
-      const img = new Image();
+    reader.onload =
 
-      img.onload = function() {
+    function(event) {
+
+      const img =
+
+      new Image();
+
+      img.onload =
+
+      function() {
 
         const maxSize = 1200;
 
-        let width = img.width;
+        let width =
 
-        let height = img.height;
+        img.width;
+
+        let height =
+
+        img.height;
 
         if (width > height) {
 
@@ -598,7 +634,9 @@ function compressPhoto(file) {
 
             height * maxSize / width;
 
-            width = maxSize;
+            width =
+
+            maxSize;
 
           }
 
@@ -612,7 +650,9 @@ function compressPhoto(file) {
 
             width * maxSize / height;
 
-            height = maxSize;
+            height =
+
+            maxSize;
 
           }
 
@@ -620,15 +660,27 @@ function compressPhoto(file) {
 
         const canvas =
 
-        document.createElement("canvas");
+        document.createElement(
 
-        canvas.width = width;
+          "canvas"
 
-        canvas.height = height;
+        );
+
+        canvas.width =
+
+        width;
+
+        canvas.height =
+
+        height;
 
         const ctx =
 
-        canvas.getContext("2d");
+        canvas.getContext(
+
+          "2d"
+
+        );
 
         ctx.drawImage(
 
@@ -658,7 +710,9 @@ function compressPhoto(file) {
 
       };
 
-      img.src = event.target.result;
+      img.src =
+
+      event.target.result;
 
     };
 
@@ -676,7 +730,9 @@ function handlePhoto(file) {
 
   .then(function(photo) {
 
-    pendingPhoto = photo;
+    pendingPhoto =
+
+    photo;
 
     const preview =
 
@@ -686,7 +742,9 @@ function handlePhoto(file) {
 
     );
 
-    preview.src = photo;
+    preview.src =
+
+    photo;
 
     preview.style.display =
 
@@ -904,7 +962,9 @@ function addMarker(find) {
 
   );
 
-  find.marker = marker;
+  find.marker =
+
+  marker;
 
 }
 
@@ -916,9 +976,13 @@ function addMarker(find) {
 
 function openFind(find) {
 
-  editingFind = find;
+  editingFind =
 
-  pendingPhoto = null;
+  find;
+
+  pendingPhoto =
+
+  null;
 
   document.getElementById(
 
@@ -1038,7 +1102,9 @@ document.getElementById(
 
 "findButton"
 
-).onclick = function() {
+).onclick =
+
+function() {
 
   if (!currentLocation) {
 
@@ -1052,9 +1118,13 @@ document.getElementById(
 
   }
 
-  editingFind = null;
+  editingFind =
 
-  pendingPhoto = null;
+  null;
+
+  pendingPhoto =
+
+  null;
 
   const number =
 
@@ -1074,7 +1144,9 @@ document.getElementById(
 
   ).innerText =
 
-  "Find #" + number;
+  "Find #" +
+
+  number;
 
   document.getElementById(
 
@@ -1108,7 +1180,11 @@ document.getElementById(
 
   "Recorded: " +
 
-  formatDate(new Date());
+  formatDate(
+
+    new Date()
+
+  );
 
   const preview =
 
@@ -1156,7 +1232,9 @@ document.getElementById(
 
 "save"
 
-).onclick = function() {
+).onclick =
+
+function() {
 
   if (editingFind) {
 
@@ -1260,7 +1338,11 @@ document.getElementById(
 
       recorded:
 
-      formatDate(new Date()),
+      formatDate(
+
+        new Date()
+
+      ),
 
       photo:
 
@@ -1298,7 +1380,9 @@ document.getElementById(
 
   "none";
 
-  pendingPhoto = null;
+  pendingPhoto =
+
+  null;
 
   updateFindList();
 
@@ -1314,7 +1398,9 @@ document.getElementById(
 
 "cancel"
 
-).onclick = function() {
+).onclick =
+
+function() {
 
   document.getElementById(
 
@@ -1324,7 +1410,9 @@ document.getElementById(
 
   "none";
 
-  pendingPhoto = null;
+  pendingPhoto =
+
+  null;
 
 };
 
@@ -1344,7 +1432,9 @@ function updateFindList() {
 
   );
 
-  list.innerHTML = "";
+  list.innerHTML =
+
+  "";
 
   if (finds.length === 0) {
 
@@ -1364,9 +1454,17 @@ function updateFindList() {
 
       return (
 
-        Number(a.number || 0) -
+        Number(
 
-        Number(b.number || 0)
+          a.number || 0
+
+        ) -
+
+        Number(
+
+          b.number || 0
+
+        )
 
       );
 
@@ -1422,7 +1520,9 @@ function updateFindList() {
 
       );
 
-      let detailText = "";
+      let detailText =
+
+      "";
 
       if (find.material) {
 
@@ -1542,7 +1642,9 @@ document.getElementById(
 
 "findsButton"
 
-).onclick = function() {
+).onclick =
+
+function() {
 
   updateFindList();
 
@@ -1566,7 +1668,9 @@ document.getElementById(
 
 "closeFinds"
 
-).onclick = function() {
+).onclick =
+
+function() {
 
   document.getElementById(
 
@@ -1580,7 +1684,7 @@ document.getElementById(
 
 /* -------------------------
 
-   BACKUP / EXPORT
+   JSON BACKUP / EXPORT
 
 ------------------------- */
 
@@ -1588,7 +1692,9 @@ document.getElementById(
 
 "backupButton"
 
-).onclick = async function() {
+).onclick =
+
+async function() {
 
   if (finds.length === 0) {
 
@@ -1604,7 +1710,9 @@ document.getElementById(
 
   const backupData = {
 
-    app: "Find Mapper",
+    app:
+
+    "Find Mapper",
 
     backupDate:
 
@@ -1612,49 +1720,53 @@ document.getElementById(
 
     finds:
 
-    finds.map(function(find) {
+    finds.map(
 
-      return {
+      function(find) {
 
-        number:
+        return {
 
-        find.number || null,
+          number:
 
-        find:
+          find.number || null,
 
-        find.find || "",
+          find:
 
-        material:
+          find.find || "",
 
-        find.material || "",
+          material:
 
-        era:
+          find.material || "",
 
-        find.era || "",
+          era:
 
-        remarks:
+          find.era || "",
 
-        find.remarks || "",
+          remarks:
 
-        lat:
+          find.remarks || "",
 
-        find.lat || null,
+          lat:
 
-        lng:
+          find.lat || null,
 
-        find.lng || null,
+          lng:
 
-        recorded:
+          find.lng || null,
 
-        find.recorded || "",
+          recorded:
 
-        photo:
+          find.recorded || "",
 
-        find.photo || null
+          photo:
 
-      };
+          find.photo || null
 
-    })
+        };
+
+      }
+
+    )
 
   };
 
@@ -1718,7 +1830,9 @@ document.getElementById(
 
         navigator.canShare({
 
-          files: [file]
+          files:
+
+          [file]
 
         })
 
@@ -1726,7 +1840,9 @@ document.getElementById(
 
         await navigator.share({
 
-          files: [file],
+          files:
+
+          [file],
 
           title:
 
@@ -1773,6 +1889,306 @@ document.getElementById(
       type:
 
       "application/json"
+
+    }
+
+  );
+
+  const url =
+
+  URL.createObjectURL(
+
+    blob
+
+  );
+
+  const link =
+
+  document.createElement(
+
+    "a"
+
+  );
+
+  link.href =
+
+  url;
+
+  link.download =
+
+  filename;
+
+  document.body.appendChild(
+
+    link
+
+  );
+
+  link.click();
+
+  document.body.removeChild(
+
+    link
+
+  );
+
+  setTimeout(
+
+    function() {
+
+      URL.revokeObjectURL(
+
+        url
+
+      );
+
+    },
+
+    1000
+
+  );
+
+};
+
+/* -------------------------
+
+   CSV EXPORT
+
+------------------------- */
+
+document.getElementById(
+
+"csvButton"
+
+).onclick =
+
+async function() {
+
+  if (finds.length === 0) {
+
+    alert(
+
+      "There are no finds to export yet."
+
+    );
+
+    return;
+
+  }
+
+  function csvValue(value) {
+
+    if (
+
+      value === null ||
+
+      value === undefined
+
+    ) {
+
+      value =
+
+      "";
+
+    }
+
+    value =
+
+    String(value);
+
+    return (
+
+      '"' +
+
+      value.replace(
+
+        /"/g,
+
+        '""'
+
+      ) +
+
+      '"'
+
+    );
+
+  }
+
+  let csv =
+
+  "\uFEFF";
+
+  csv +=
+
+  "Find Number,Find,Material,Date / Era,Remarks,Latitude,Longitude,Recorded\n";
+
+  finds.forEach(
+
+    function(find) {
+
+      csv +=
+
+        csvValue(
+
+          find.number
+
+        ) + "," +
+
+        csvValue(
+
+          find.find
+
+        ) + "," +
+
+        csvValue(
+
+          find.material
+
+        ) + "," +
+
+        csvValue(
+
+          find.era
+
+        ) + "," +
+
+        csvValue(
+
+          find.remarks
+
+        ) + "," +
+
+        csvValue(
+
+          find.lat
+
+        ) + "," +
+
+        csvValue(
+
+          find.lng
+
+        ) + "," +
+
+        csvValue(
+
+          find.recorded
+
+        ) +
+
+        "\n";
+
+    }
+
+  );
+
+  const today =
+
+  new Date()
+
+  .toISOString()
+
+  .slice(0, 10);
+
+  const filename =
+
+  "FindMapper_Finds_" +
+
+  today +
+
+  ".csv";
+
+  try {
+
+    if (
+
+      navigator.share &&
+
+      navigator.canShare
+
+    ) {
+
+      const file =
+
+      new File(
+
+        [csv],
+
+        filename,
+
+        {
+
+          type:
+
+          "text/csv"
+
+        }
+
+      );
+
+      if (
+
+        navigator.canShare({
+
+          files:
+
+          [file]
+
+        })
+
+      ) {
+
+        await navigator.share({
+
+          files:
+
+          [file],
+
+          title:
+
+          "Find Mapper CSV Export",
+
+          text:
+
+          "Export of my Find Mapper records."
+
+        });
+
+        return;
+
+      }
+
+    }
+
+  }
+
+  catch (error) {
+
+    if (
+
+      error.name ===
+
+      "AbortError"
+
+    ) {
+
+      return;
+
+    }
+
+  }
+
+  const blob =
+
+  new Blob(
+
+    [csv],
+
+    {
+
+      type:
+
+      "text/csv;charset=utf-8;"
 
     }
 
