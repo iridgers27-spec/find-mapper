@@ -54,7 +54,7 @@ button {
 
 }
 
-/* FINDS BUTTON */
+/* FINDS */
 
 #findsButton {
 
@@ -124,7 +124,7 @@ button {
 
 }
 
-/* PLACE MESSAGE */
+/* PLACING MESSAGE */
 
 #placeMessage {
 
@@ -134,19 +134,19 @@ button {
 
   top: 70px;
 
-  left: 20px;
+  left: 15px;
 
-  right: 20px;
+  right: 15px;
 
   z-index: 1500;
 
   background: white;
 
-  box-shadow: 0 2px 12px #555;
-
   border-radius: 15px;
 
   padding: 15px;
+
+  box-shadow: 0 2px 12px #555;
 
   text-align: center;
 
@@ -156,15 +156,17 @@ button {
 
 #cancelPlace {
 
-  background: #ddd;
-
-  margin-top: 10px;
+  display: block;
 
   width: 100%;
 
+  margin-top: 10px;
+
+  background: #ddd;
+
 }
 
-/* FORM AND FINDS PANEL */
+/* FORM */
 
 #form,
 
@@ -229,8 +231,6 @@ button {
   background: #ddd;
 
 }
-
-/* FORM */
 
 #title {
 
@@ -336,13 +336,9 @@ textarea {
 
   margin-top: 20px;
 
-  padding: 15px;
-
-  font-size: 17px;
-
 }
 
-/* PHOTOS */
+/* PHOTO */
 
 #photoButtons {
 
@@ -462,6 +458,24 @@ textarea {
 
 }
 
+/* BLUE FIND MARKER */
+
+.find-marker {
+
+  width: 18px;
+
+  height: 18px;
+
+  background: #147ef5;
+
+  border: 3px solid white;
+
+  border-radius: 50%;
+
+  box-shadow: 0 1px 5px #333;
+
+}
+
 </style>
 
 </head>
@@ -494,7 +508,11 @@ textarea {
 
 <div id="placeMessage">
 
-Tap the map where you want to place the find.
+<strong>PLACE FIND</strong>
+
+<br><br>
+
+Tap anywhere on the map to place the find.
 
 <button id="cancelPlace">
 
@@ -504,7 +522,11 @@ CANCEL
 
 </div>
 
-<!-- FIND FORM -->
+<!-- =========================
+
+     FIND FORM
+
+========================= -->
 
 <div id="form">
 
@@ -536,7 +558,9 @@ New Find
 
 id="remarks"
 
-placeholder="Enter any additional information..."></textarea>
+placeholder="Enter any additional information...">
+
+</textarea>
 
 <label>Photo</label>
 
@@ -582,7 +606,9 @@ id="libraryInput"
 
 accept="image/*">
 
-<img id="photoPreview">
+<img
+
+id="photoPreview">
 
 <div id="recorded"></div>
 
@@ -606,7 +632,11 @@ CANCEL
 
 </div>
 
-<!-- FINDS PANEL -->
+<!-- =========================
+
+     FINDS PANEL
+
+========================= -->
 
 <div id="findsPanel">
 
@@ -646,11 +676,11 @@ src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
 
 <script>
 
-/* =========================
+/* ==================================================
 
    VARIABLES
 
-========================= */
+================================================== */
 
 let map = null;
 
@@ -664,7 +694,7 @@ let placingFind = false;
 
 let selectedLocation = null;
 
-let placementMarker = null;
+let temporaryMarker = null;
 
 let finds =
 
@@ -674,11 +704,11 @@ localStorage.getItem("finds") || "[]"
 
 );
 
-/* =========================
+/* ==================================================
 
    FIND NUMBER
 
-========================= */
+================================================== */
 
 function nextFindNumber() {
 
@@ -706,11 +736,11 @@ function nextFindNumber() {
 
 }
 
-/* =========================
+/* ==================================================
 
    DATE
 
-========================= */
+================================================== */
 
 function formatDate(date) {
 
@@ -736,11 +766,11 @@ function formatDate(date) {
 
 }
 
-/* =========================
+/* ==================================================
 
-   PHOTO COMPRESSION
+   PHOTO
 
-========================= */
+================================================== */
 
 function compressPhoto(file) {
 
@@ -786,9 +816,7 @@ function compressPhoto(file) {
 
           }
 
-        }
-
-        else {
+        } else {
 
           if (height > maxSize) {
 
@@ -900,8 +928,6 @@ function handlePhoto(file) {
 
 }
 
-/* PHOTO INPUTS */
-
 document.getElementById(
 
 "cameraInput"
@@ -938,11 +964,43 @@ function(event) {
 
 });
 
-/* =========================
+/* ==================================================
+
+   BLUE FIND ICON
+
+================================================== */
+
+function createFindIcon() {
+
+  return L.divIcon({
+
+    className: "",
+
+    html:
+
+    '<div class="find-marker"></div>',
+
+    iconSize:
+
+    [24, 24],
+
+    iconAnchor:
+
+    [12, 12],
+
+    popupAnchor:
+
+    [0, -12]
+
+  });
+
+}
+
+/* ==================================================
 
    MAP
 
-========================= */
+================================================== */
 
 function startMap() {
 
@@ -964,7 +1022,7 @@ function startMap() {
 
   ).addTo(map);
 
-  /* EXISTING FINDS */
+  /* LOAD EXISTING FINDS */
 
   finds.forEach(
 
@@ -1068,11 +1126,11 @@ function startMap() {
 
 }
 
-/* =========================
+/* ==================================================
 
-   ADD FIND MARKER
+   ADD PERMANENT FIND MARKER
 
-========================= */
+================================================== */
 
 function addMarker(find) {
 
@@ -1090,7 +1148,7 @@ function addMarker(find) {
 
   const marker =
 
-  L.circleMarker(
+  L.marker(
 
     [
 
@@ -1102,15 +1160,13 @@ function addMarker(find) {
 
     {
 
-      radius: 7,
+      icon:
 
-      color: "white",
+      createFindIcon(),
 
-      fillColor: "#147ef5",
+      zIndexOffset:
 
-      fillOpacity: 1,
-
-      weight: 2
+      100
 
     }
 
@@ -1134,11 +1190,11 @@ function addMarker(find) {
 
 }
 
-/* =========================
+/* ==================================================
 
-   PLACE FIND MODE
+   PLACE FIND BUTTON
 
-========================= */
+================================================== */
 
 document.getElementById(
 
@@ -1152,6 +1208,10 @@ function() {
 
   true;
 
+  selectedLocation =
+
+  null;
+
   document.getElementById(
 
     "placeMessage"
@@ -1160,15 +1220,27 @@ function() {
 
   "block";
 
+  /* CHANGE CURSOR */
+
+  document.getElementById(
+
+    "map"
+
+  ).style.cursor =
+
+  "crosshair";
+
 };
 
-/* =========================
+/* ==================================================
 
    MAP CLICK
 
-========================= */
+================================================== */
 
-function placeFindOnMap(event) {
+mapClickHandler =
+
+function(event) {
 
   if (!placingFind) {
 
@@ -1192,63 +1264,51 @@ function placeFindOnMap(event) {
 
   };
 
-  /* REMOVE OLD PLACEMENT DOT */
+  /* ================================================
 
-  if (placementMarker) {
+     CREATE BLUE DOT IMMEDIATELY
+
+  ================================================= */
+
+  if (temporaryMarker) {
 
     map.removeLayer(
 
-      placementMarker
+      temporaryMarker
 
     );
 
   }
 
-  /* CREATE BLUE DOT */
+  temporaryMarker =
 
-  placementMarker =
+  L.marker(
 
-  L.circleMarker(
-
-    [
-
-      lat,
-
-      lng
-
-    ],
+    [lat, lng],
 
     {
 
-      radius: 10,
+      icon:
 
-      color: "white",
+      createFindIcon(),
 
-      fillColor: "#147ef5",
+      zIndexOffset:
 
-      fillOpacity: 1,
+      1000,
 
-      weight: 3
+      interactive:
+
+      false
 
     }
 
   ).addTo(map);
 
-  /* IMPORTANT:
+  /* FORCE MAP TO SHOW THE MARKER */
 
-     MAKE THE DOT CLICKABLE */
+  temporaryMarker.bringToFront();
 
-  placementMarker.bindTooltip(
-
-    "New Find",
-
-    {
-
-      direction: "top"
-
-    }
-
-  );
+  /* STOP PLACING */
 
   placingFind =
 
@@ -1262,6 +1322,16 @@ function placeFindOnMap(event) {
 
   "none";
 
+  document.getElementById(
+
+    "map"
+
+  ).style.cursor =
+
+  "";
+
+  /* OPEN FORM */
+
   openNewFind(
 
     lat,
@@ -1270,13 +1340,21 @@ function placeFindOnMap(event) {
 
   );
 
-}
+};
 
-/* =========================
+/*
 
-   OPEN NEW FIND
+   The handler is attached after the map
 
-========================= */
+   has been created below.
+
+*/
+
+/* ==================================================
+
+   NEW FIND FORM
+
+================================================== */
 
 function openNewFind(
 
@@ -1294,10 +1372,6 @@ function openNewFind(
 
   null;
 
-  const number =
-
-  nextFindNumber();
-
   document.getElementById(
 
     "title"
@@ -1314,7 +1388,7 @@ function openNewFind(
 
   "Find #" +
 
-  number;
+  nextFindNumber();
 
   document.getElementById(
 
@@ -1326,11 +1400,11 @@ function openNewFind(
 
   "Latitude: " +
 
-  lat.toFixed(7) +
+  Number(lat).toFixed(7) +
 
   "\nLongitude: " +
 
-  lng.toFixed(7);
+  Number(lng).toFixed(7);
 
   document.getElementById(
 
@@ -1428,11 +1502,11 @@ function openNewFind(
 
 }
 
-/* =========================
+/* ==================================================
 
    GPS FIND
 
-========================= */
+================================================== */
 
 document.getElementById(
 
@@ -1468,19 +1542,19 @@ function() {
 
   openNewFind(
 
-    currentLocation[0],
+    selectedLocation.lat,
 
-    currentLocation[1]
+    selectedLocation.lng
 
   );
 
 };
 
-/* =========================
+/* ==================================================
 
-   CANCEL PLACE
+   CANCEL PLACEMENT
 
-========================= */
+================================================== */
 
 document.getElementById(
 
@@ -1494,6 +1568,10 @@ function() {
 
   false;
 
+  selectedLocation =
+
+  null;
+
   document.getElementById(
 
     "placeMessage"
@@ -1502,13 +1580,35 @@ function() {
 
   "none";
 
+  document.getElementById(
+
+    "map"
+
+  ).style.cursor =
+
+  "";
+
+  if (temporaryMarker) {
+
+    map.removeLayer(
+
+      temporaryMarker
+
+    );
+
+    temporaryMarker =
+
+    null;
+
+  }
+
 };
 
-/* =========================
+/* ==================================================
 
    SAVE
 
-========================= */
+================================================== */
 
 document.getElementById(
 
@@ -1518,7 +1618,11 @@ document.getElementById(
 
 function() {
 
-  /* EDIT EXISTING FIND */
+  /* ================================================
+
+     EDIT EXISTING FIND
+
+  ================================================= */
 
   if (editingFind) {
 
@@ -1572,7 +1676,11 @@ function() {
 
   }
 
-  /* NEW FIND */
+  /* ================================================
+
+     NEW FIND
+
+  ================================================= */
 
   else {
 
@@ -1664,25 +1772,23 @@ function() {
 
     /*
 
-      IMPORTANT FIX:
+       REMOVE TEMPORARY MARKER
 
-      The blue placement dot is
+       AND REPLACE IT WITH THE
 
-      converted into the permanent
-
-      find marker.
+       PERMANENT SAVED MARKER.
 
     */
 
-    if (placementMarker) {
+    if (temporaryMarker) {
 
       map.removeLayer(
 
-        placementMarker
+        temporaryMarker
 
       );
 
-      placementMarker =
+      temporaryMarker =
 
       null;
 
@@ -1720,11 +1826,11 @@ function() {
 
 };
 
-/* =========================
+/* ==================================================
 
    CANCEL FORM
 
-========================= */
+================================================== */
 
 document.getElementById(
 
@@ -1754,15 +1860,15 @@ function() {
 
   null;
 
-  if (placementMarker) {
+  if (temporaryMarker) {
 
     map.removeLayer(
 
-      placementMarker
+      temporaryMarker
 
     );
 
-    placementMarker =
+    temporaryMarker =
 
     null;
 
@@ -1770,11 +1876,11 @@ function() {
 
 };
 
-/* =========================
+/* ==================================================
 
-   OPEN FIND
+   OPEN EXISTING FIND
 
-========================= */
+================================================== */
 
 function openFind(find) {
 
@@ -1920,11 +2026,11 @@ function openFind(find) {
 
 }
 
-/* =========================
+/* ==================================================
 
-   DELETE FIND
+   DELETE
 
-========================= */
+================================================== */
 
 document.getElementById(
 
@@ -1940,19 +2046,13 @@ function() {
 
   }
 
-  const number =
-
-  editingFind.number ||
-
-  "unknown";
-
   const confirmed =
 
   confirm(
 
     "Delete Find #" +
 
-    number +
+    (editingFind.number || "") +
 
     "?\n\n" +
 
@@ -2028,11 +2128,11 @@ function() {
 
 };
 
-/* =========================
+/* ==================================================
 
    FIND LIST
 
-========================= */
+================================================== */
 
 function updateFindList() {
 
@@ -2204,29 +2304,19 @@ function updateFindList() {
 
         "none";
 
-        if (
+        map.setView(
 
-          find.lat !== undefined &&
+          [
 
-          find.lng !== undefined
+            Number(find.lat),
 
-        ) {
+            Number(find.lng)
 
-          map.setView(
+          ],
 
-            [
+          19
 
-              Number(find.lat),
-
-              Number(find.lng)
-
-            ],
-
-            19
-
-          );
-
-        }
+        );
 
         openFind(find);
 
@@ -2244,11 +2334,11 @@ function updateFindList() {
 
 }
 
-/* =========================
+/* ==================================================
 
    FINDS PANEL
 
-========================= */
+================================================== */
 
 document.getElementById(
 
@@ -2288,11 +2378,11 @@ function() {
 
 };
 
-/* =========================
+/* ==================================================
 
-   JSON BACKUP
+   BACKUP
 
-========================= */
+================================================== */
 
 document.getElementById(
 
@@ -2556,11 +2646,11 @@ async function() {
 
 };
 
-/* =========================
+/* ==================================================
 
    CSV EXPORT
 
-========================= */
+================================================== */
 
 document.getElementById(
 
@@ -2598,15 +2688,13 @@ async function() {
 
     }
 
-    value =
-
-    String(value);
-
     return (
 
       '"' +
 
-      value.replace(
+      String(value)
+
+      .replace(
 
         /"/g,
 
@@ -2634,55 +2722,55 @@ async function() {
 
       csv +=
 
-        csvValue(
+      csvValue(
 
-          find.number
+        find.number
 
-        ) + "," +
+      ) + "," +
 
-        csvValue(
+      csvValue(
 
-          find.find
+        find.find
 
-        ) + "," +
+      ) + "," +
 
-        csvValue(
+      csvValue(
 
-          find.material
+        find.material
 
-        ) + "," +
+      ) + "," +
 
-        csvValue(
+      csvValue(
 
-          find.era
+        find.era
 
-        ) + "," +
+      ) + "," +
 
-        csvValue(
+      csvValue(
 
-          find.remarks
+        find.remarks
 
-        ) + "," +
+      ) + "," +
 
-        csvValue(
+      csvValue(
 
-          find.lat
+        find.lat
 
-        ) + "," +
+      ) + "," +
 
-        csvValue(
+      csvValue(
 
-          find.lng
+        find.lng
 
-        ) + "," +
+      ) + "," +
 
-        csvValue(
+      csvValue(
 
-          find.recorded
+        find.recorded
 
-        ) +
+      ) +
 
-        "\n";
+      "\n";
 
     }
 
@@ -2856,33 +2944,33 @@ async function() {
 
 };
 
-/* =========================
+/* ==================================================
 
-   MAP CLICK LISTENER
+   START MAP
 
-========================= */
-
-function setupMapClick() {
-
-  map.on(
-
-    "click",
-
-    placeFindOnMap
-
-  );
-
-}
-
-/* =========================
-
-   START APP
-
-========================= */
+================================================== */
 
 startMap();
 
-setupMapClick();
+/* ==================================================
+
+   ATTACH MAP CLICK HANDLER
+
+================================================== */
+
+map.on(
+
+  "click",
+
+  mapClickHandler
+
+);
+
+/* ==================================================
+
+   START FIND LIST
+
+================================================== */
 
 updateFindList();
 
