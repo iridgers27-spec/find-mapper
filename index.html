@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 
 <html lang="en">
@@ -155,6 +153,22 @@ button {
   float: right;
 
   background: #ddd;
+
+}
+
+#backupButton {
+
+  width: 100%;
+
+  background: #34c759;
+
+  color: white;
+
+  margin-top: 20px;
+
+  padding: 15px;
+
+  font-size: 17px;
 
 }
 
@@ -459,6 +473,12 @@ My Finds
 </h2>
 
 <div id="findList"></div>
+
+<button id="backupButton">
+
+💾 BACKUP / EXPORT FINDS
+
+</button>
 
 </div>
 
@@ -1557,6 +1577,128 @@ document.getElementById(
   ).style.display =
 
   "none";
+
+};
+
+/* -------------------------
+
+   BACKUP / EXPORT
+
+------------------------- */
+
+document.getElementById(
+
+"backupButton"
+
+).onclick = function() {
+
+  if (finds.length === 0) {
+
+    alert(
+
+      "There are no finds to back up yet."
+
+    );
+
+    return;
+
+  }
+
+  const backupData = {
+
+    app: "Find Mapper",
+
+    backupDate: new Date().toISOString(),
+
+    finds: finds.map(function(find) {
+
+      return {
+
+        number: find.number || null,
+
+        find: find.find || "",
+
+        material: find.material || "",
+
+        era: find.era || "",
+
+        remarks: find.remarks || "",
+
+        lat: find.lat || null,
+
+        lng: find.lng || null,
+
+        recorded: find.recorded || "",
+
+        photo: find.photo || null
+
+      };
+
+    })
+
+  };
+
+  const json = JSON.stringify(
+
+    backupData,
+
+    null,
+
+    2
+
+  );
+
+  const blob = new Blob(
+
+    [json],
+
+    {
+
+      type: "application/json"
+
+    }
+
+  );
+
+  const url =
+
+  URL.createObjectURL(blob);
+
+  const link =
+
+  document.createElement("a");
+
+  const today =
+
+  new Date()
+
+  .toISOString()
+
+  .slice(0, 10);
+
+  link.href = url;
+
+  link.download =
+
+  "FindMapper_Backup_" +
+
+  today +
+
+  ".json";
+
+  document.body.appendChild(link);
+
+  link.click();
+
+  document.body.removeChild(link);
+
+  URL.revokeObjectURL(url);
+
+  alert(
+
+    "Backup created successfully."
+
+  );
 
 };
 
