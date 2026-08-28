@@ -1,73 +1,157 @@
 <!DOCTYPE html>
+
 <html>
+
 <head>
+
 <meta name="viewport" content="width=device-width, initial-scale=1">
+
 <title>Find Mapper</title>
 
+<link rel="stylesheet"
+
+href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
 <style>
+
 body {
+
   margin: 0;
+
   font-family: Arial, sans-serif;
+
   background: #eee;
+
 }
 
 #map {
+
   height: 100vh;
+
   width: 100%;
+
 }
 
 #findButton {
+
   position: fixed;
+
   bottom: 25px;
+
   left: 50%;
+
   transform: translateX(-50%);
+
   z-index: 1000;
+
   background: #147ef5;
+
   color: white;
+
   border: none;
+
   border-radius: 30px;
+
   padding: 16px 30px;
+
   font-size: 20px;
+
   font-weight: bold;
+
 }
 
 #form {
+
   display: none;
+
   position: fixed;
+
   bottom: 10px;
+
   left: 10px;
+
   right: 10px;
+
   z-index: 2000;
+
   background: white;
+
   padding: 20px;
+
   border-radius: 18px;
+
   box-shadow: 0 2px 15px #555;
+
+}
+
+#findNumber {
+
+  font-size: 18px;
+
+  font-weight: bold;
+
+  margin-bottom: 12px;
+
+}
+
+label {
+
+  font-weight: bold;
+
 }
 
 input {
+
   width: 100%;
+
   padding: 12px;
+
   margin: 6px 0 12px;
+
   box-sizing: border-box;
+
   font-size: 17px;
+
 }
 
 button {
+
   padding: 12px;
+
   font-size: 17px;
+
   border-radius: 10px;
+
   border: none;
+
 }
 
 #save {
+
   background: #147ef5;
+
   color: white;
+
 }
 
 #cancel {
+
   background: #ddd;
+
 }
+
+#recorded {
+
+  font-size: 14px;
+
+  color: #555;
+
+  margin-top: 10px;
+
+}
+
 </style>
+
 </head>
 
 <body>
@@ -79,217 +163,431 @@ button {
 <div id="form">
 
 <h2 id="title">New Find</h2>
+
 <div id="findNumber"></div>
+
 <label>Find</label>
+
 <input id="find">
 
 <label>Material</label>
+
 <input id="material">
 
 <label>Date / Era</label>
+
 <input id="era">
 
+<div id="recorded"></div>
+
+<br>
+
 <button id="save">SAVE</button>
+
 <button id="cancel">CANCEL</button>
 
 </div>
 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
 <script>
 
 let map;
+
 let currentLocation;
-let selectedMarker = null;
+
+let editingFind = null;
 
 let finds =
+
 JSON.parse(localStorage.getItem("finds") || "[]");
+
+function nextFindNumber() {
+
+  let highest = 0;
+
+  finds.forEach(function(find) {
+
+    if (find.number &&
+
+        Number(find.number) > highest) {
+
+      highest = Number(find.number);
+
+    }
+
+  });
+
+  return highest + 1;
+
+}
+
+function formatDate(date) {
+
+  return date.toLocaleString(
+
+    "en-GB",
+
+    {
+
+      day: "2-digit",
+
+      month: "2-digit",
+
+      year: "numeric",
+
+      hour: "2-digit",
+
+      minute: "2-digit"
+
+    }
+
+  );
+
+}
 
 function startMap() {
 
-  map = L.map("map").setView([51.35,0.75],16);
+  map = L.map("map").setView(
 
- L.tileLayer(
+    [51.35, 0.75],
 
-  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+    16
 
-  {
+  );
 
-    attribution:
+  L.tileLayer(
+
+    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+
+    {
+
+      attribution:
 
       "Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics"
 
-  }
+    }
 
-).addTo(map)
+  ).addTo(map);
 
   finds.forEach(addMarker);
 
   if (navigator.geolocation) {
 
     navigator.geolocation.watchPosition(
+
       function(position) {
 
         currentLocation = [
+
           position.coords.latitude,
+
           position.coords.longitude
+
         ];
 
-        map.setView(currentLocation,17);
+        map.setView(
+
+          currentLocation,
+
+          17
+
+        );
 
         if (!window.locationMarker) {
 
           window.locationMarker =
-            L.circleMarker(currentLocation,{
-              radius:8,
-              color:"white",
-              fillColor:"#147ef5",
-              fillOpacity:1
-            }).addTo(map);
 
-        } else {
+          L.circleMarker(
 
-          window.locationMarker
-            .setLatLng(currentLocation);
+            currentLocation,
+
+            {
+
+              radius: 8,
+
+              color: "white",
+
+              fillColor: "#147ef5",
+
+              fillOpacity: 1
+
+            }
+
+          ).addTo(map);
 
         }
 
+        else {
+
+          window.locationMarker
+
+          .setLatLng(currentLocation);
+
+        }
+
+      },
+
+      function() {
+
+        alert(
+
+          "Location access is needed to record a find."
+
+        );
+
+      },
+
+      {
+
+        enableHighAccuracy: true,
+
+        maximumAge: 10000,
+
+        timeout: 15000
+
       }
+
     );
 
   }
+
 }
 
 function addMarker(find) {
 
   let marker =
-    L.circleMarker(
-      [find.lat,find.lng],
-      {
-        radius:7,
-        color:"white",
-        fillColor:"#147ef5",
-        fillOpacity:1
-      }
-    ).addTo(map);
 
-  marker.on("click",function(){
+  L.circleMarker(
 
-    selectedMarker = marker;
+    [find.lat, find.lng],
 
-    document.getElementById("title")
-      .innerText="Edit Find";
-    document.getElementById("findNumber")
+    {
 
-    .innerText="Find #" + find.number;
-    document.getElementById("find")
-      .value=find.find;
+      radius: 7,
 
-    document.getElementById("material")
-      .value=find.material;
+      color: "white",
 
-    document.getElementById("era")
-      .value=find.era;
+      fillColor: "#147ef5",
 
-    document.getElementById("form")
-      .style.display="block";
+      fillOpacity: 1
 
-    window.editingFind=find;
+    }
 
-  });
+  ).addTo(map);
+
+  marker.on(
+
+    "click",
+
+    function() {
+
+      editingFind = find;
+
+      document.getElementById("title")
+
+      .innerText = "Edit Find";
+
+      document.getElementById("findNumber")
+
+      .innerText =
+
+      "Find #" +
+
+      (find.number || "unknown");
+
+      document.getElementById("find")
+
+      .value =
+
+      find.find || "";
+
+      document.getElementById("material")
+
+      .value =
+
+      find.material || "";
+
+      document.getElementById("era")
+
+      .value =
+
+      find.era || "";
+
+      document.getElementById("recorded")
+
+      .innerText =
+
+      find.recorded
+
+      ? "Recorded: " + find.recorded
+
+      : "";
+
+      document.getElementById("form")
+
+      .style.display = "block";
+
+    }
+
+  );
 
 }
 
 document.getElementById("findButton")
-.onclick=function(){
 
-  if(!currentLocation){
+.onclick = function() {
 
-    alert("Waiting for GPS location...");
+  if (!currentLocation) {
+
+    alert(
+
+      "Waiting for GPS location..."
+
+    );
+
     return;
+
   }
 
-  window.editingFind=null;
+  editingFind = null;
+
+  let number =
+
+  nextFindNumber();
 
   document.getElementById("title")
-    .innerText="New Find";
 
-  document.getElementById("find").value="";
-  document.getElementById("material").value="";
-  document.getElementById("era").value="";
+  .innerText = "New Find";
+
+  document.getElementById("findNumber")
+
+  .innerText =
+
+  "Find #" + number;
+
+  document.getElementById("find")
+
+  .value = "";
+
+  document.getElementById("material")
+
+  .value = "";
+
+  document.getElementById("era")
+
+  .value = "";
+
+  document.getElementById("recorded")
+
+  .innerText =
+
+  "Recorded: " +
+
+  formatDate(new Date());
 
   document.getElementById("form")
-    .style.display="block";
+
+  .style.display = "block";
 
 };
 
 document.getElementById("cancel")
-.onclick=function(){
+
+.onclick = function() {
 
   document.getElementById("form")
-    .style.display="none";
+
+  .style.display = "none";
 
 };
 
 document.getElementById("save")
-.onclick=function(){
 
-  if(window.editingFind){
+.onclick = function() {
 
-    window.editingFind.find =
-      document.getElementById("find").value;
+  if (editingFind) {
 
-    window.editingFind.material =
-      document.getElementById("material").value;
+    editingFind.find =
 
-    window.editingFind.era =
-      document.getElementById("era").value;
+    document.getElementById("find").value;
 
-  } else {
+    editingFind.material =
 
-    let newFind={
-      number: finds.length + 1,
-      find:document.getElementById("find").value,
+    document.getElementById("material").value;
+
+    editingFind.era =
+
+    document.getElementById("era").value;
+
+    localStorage.setItem(
+
+      "finds",
+
+      JSON.stringify(finds)
+
+    );
+
+  }
+
+  else {
+
+    let newFind = {
+
+      number:
+
+      nextFindNumber(),
+
+      find:
+
+      document.getElementById("find").value,
 
       material:
-        document.getElementById("material").value,
+
+      document.getElementById("material").value,
 
       era:
-        document.getElementById("era").value,
 
-      lat:currentLocation[0],
+      document.getElementById("era").value,
 
-      lng:currentLocation[1]
+      lat:
+
+      currentLocation[0],
+
+      lng:
+
+      currentLocation[1],
+
+      recorded:
+
+      formatDate(new Date())
 
     };
 
     finds.push(newFind);
 
+    localStorage.setItem(
+
+      "finds",
+
+      JSON.stringify(finds)
+
+    );
+
     addMarker(newFind);
 
   }
 
-  localStorage.setItem(
-    "finds",
-    JSON.stringify(finds)
-  );
-
   document.getElementById("form")
-    .style.display="none";
+
+  .style.display = "none";
 
 };
 
-</script>
-
-<script
-src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-</script>
-
-<link
-rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-
-<script>
 startMap();
+
 </script>
 
 </body>
+
 </html>
