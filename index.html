@@ -148,6 +148,22 @@ textarea {
 
 }
 
+#photoPreview {
+
+  display: none;
+
+  width: 100%;
+
+  max-height: 300px;
+
+  object-fit: contain;
+
+  margin-top: 10px;
+
+  border-radius: 10px;
+
+}
+
 #recorded {
 
   font-size: 14px;
@@ -185,6 +201,52 @@ button {
 #cancel {
 
   background: #ddd;
+
+}
+
+#photoButtons {
+
+  display: flex;
+
+  gap: 8px;
+
+  margin-top: 5px;
+
+}
+
+.photoButton {
+
+  flex: 1;
+
+  background: #eee;
+
+  padding: 12px;
+
+  border-radius: 10px;
+
+  text-align: center;
+
+  font-size: 16px;
+
+  cursor: pointer;
+
+}
+
+#photoInput {
+
+  display: none;
+
+}
+
+#existingPhoto {
+
+  display: none;
+
+  margin-top: 10px;
+
+  color: #555;
+
+  font-size: 14px;
 
 }
 
@@ -264,6 +326,64 @@ placeholder="Enter any additional information...">
 
 </textarea>
 
+<label>
+
+Photo
+
+</label>
+
+<div id="photoButtons">
+
+<label
+
+for="cameraInput"
+
+class="photoButton">
+
+📷 Take Photo
+
+</label>
+
+<label
+
+for="libraryInput"
+
+class="photoButton">
+
+🖼️ Choose Photo
+
+</label>
+
+</div>
+
+<input
+
+type="file"
+
+id="cameraInput"
+
+accept="image/*"
+
+capture="environment">
+
+<input
+
+type="file"
+
+id="libraryInput"
+
+accept="image/*">
+
+<img
+
+id="photoPreview">
+
+<div id="existingPhoto">
+
+Photo attached to this find
+
+</div>
+
 <div id="recorded">
 
 </div>
@@ -295,6 +415,8 @@ let map;
 let currentLocation;
 
 let editingFind = null;
+
+let pendingPhoto = null;
 
 let finds =
 
@@ -353,6 +475,202 @@ function formatDate(date) {
   );
 
 }
+
+function compressPhoto(file) {
+
+  return new Promise(function(resolve) {
+
+    let reader =
+
+    new FileReader();
+
+    reader.onload = function(event) {
+
+      let img =
+
+      new Image();
+
+      img.onload = function() {
+
+        let maxSize = 1200;
+
+        let width = img.width;
+
+        let height = img.height;
+
+        if (width > height) {
+
+          if (width > maxSize) {
+
+            height =
+
+            height *
+
+            maxSize /
+
+            width;
+
+            width =
+
+            maxSize;
+
+          }
+
+        }
+
+        else {
+
+          if (height > maxSize) {
+
+            width =
+
+            width *
+
+            maxSize /
+
+            height;
+
+            height =
+
+            maxSize;
+
+          }
+
+        }
+
+        let canvas =
+
+        document.createElement("canvas");
+
+        canvas.width = width;
+
+        canvas.height = height;
+
+        let ctx =
+
+        canvas.getContext("2d");
+
+        ctx.drawImage(
+
+          img,
+
+          0,
+
+          0,
+
+          width,
+
+          height
+
+        );
+
+        resolve(
+
+          canvas.toDataURL(
+
+            "image/jpeg",
+
+            0.75
+
+          )
+
+        );
+
+      };
+
+      img.src =
+
+      event.target.result;
+
+    };
+
+    reader.readAsDataURL(file);
+
+  });
+
+}
+
+function handlePhoto(file) {
+
+  if (!file) {
+
+    return;
+
+  }
+
+  compressPhoto(file)
+
+  .then(function(photo) {
+
+    pendingPhoto = photo;
+
+    let preview =
+
+    document.getElementById(
+
+      "photoPreview"
+
+    );
+
+    preview.src =
+
+    photo;
+
+    preview.style.display =
+
+    "block";
+
+    document.getElementById(
+
+      "existingPhoto"
+
+    ).style.display =
+
+    "none";
+
+  });
+
+}
+
+document.getElementById(
+
+  "cameraInput"
+
+).addEventListener(
+
+  "change",
+
+  function(event) {
+
+    handlePhoto(
+
+      event.target.files[0]
+
+    );
+
+  }
+
+);
+
+document.getElementById(
+
+  "libraryInput"
+
+).addEventListener(
+
+  "change",
+
+  function(event) {
+
+    handlePhoto(
+
+      event.target.files[0]
+
+    );
+
+  }
+
+);
 
 function startMap() {
 
@@ -466,16 +784,6 @@ function startMap() {
 
   }
 
-  else {
-
-    alert(
-
-      "GPS is not available."
-
-    );
-
-  }
-
 }
 
 function addMarker(find) {
@@ -507,6 +815,8 @@ function addMarker(find) {
     function() {
 
       editingFind = find;
+
+      pendingPhoto = null;
 
       document.getElementById(
 
@@ -582,6 +892,52 @@ function addMarker(find) {
 
       "";
 
+      let preview =
+
+      document.getElementById(
+
+        "photoPreview"
+
+      );
+
+      if (find.photo) {
+
+        preview.src =
+
+        find.photo;
+
+        preview.style.display =
+
+        "block";
+
+        document.getElementById(
+
+          "existingPhoto"
+
+        ).style.display =
+
+        "block";
+
+      }
+
+      else {
+
+        preview.src = "";
+
+        preview.style.display =
+
+        "none";
+
+        document.getElementById(
+
+          "existingPhoto"
+
+        ).style.display =
+
+        "none";
+
+      }
+
       document.getElementById(
 
         "form"
@@ -615,6 +971,8 @@ document.getElementById(
   }
 
   editingFind = null;
+
+  pendingPhoto = null;
 
   let number =
 
@@ -676,6 +1034,40 @@ document.getElementById(
 
   document.getElementById(
 
+    "photoPreview"
+
+  ).style.display =
+
+  "none";
+
+  document.getElementById(
+
+    "photoPreview"
+
+  ).src = "";
+
+  document.getElementById(
+
+    "existingPhoto"
+
+  ).style.display =
+
+  "none";
+
+  document.getElementById(
+
+    "cameraInput"
+
+  ).value = "";
+
+  document.getElementById(
+
+    "libraryInput"
+
+  ).value = "";
+
+  document.getElementById(
+
     "form"
 
   ).style.display =
@@ -697,6 +1089,8 @@ document.getElementById(
   ).style.display =
 
   "none";
+
+  pendingPhoto = null;
 
 };
 
@@ -739,6 +1133,14 @@ document.getElementById(
       "remarks"
 
     ).value;
+
+    if (pendingPhoto) {
+
+      editingFind.photo =
+
+      pendingPhoto;
+
+    }
 
     localStorage.setItem(
 
@@ -804,7 +1206,11 @@ document.getElementById(
 
         new Date()
 
-      )
+      ),
+
+      photo:
+
+      pendingPhoto || null
 
     };
 
@@ -830,6 +1236,8 @@ document.getElementById(
 
   "none";
 
+  pendingPhoto = null;
+
 };
 
 startMap();
@@ -839,4 +1247,3 @@ startMap();
 </body>
 
 </html>
-
