@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 
 <html lang="en">
@@ -153,22 +155,6 @@ button {
   float: right;
 
   background: #ddd;
-
-}
-
-#backupButton {
-
-  width: 100%;
-
-  background: #34c759;
-
-  color: white;
-
-  margin-top: 20px;
-
-  padding: 15px;
-
-  font-size: 17px;
 
 }
 
@@ -474,12 +460,6 @@ My Finds
 
 <div id="findList"></div>
 
-<button id="backupButton">
-
-💾 BACKUP / EXPORT FINDS
-
-</button>
-
 </div>
 
 <script
@@ -602,9 +582,7 @@ function compressPhoto(file) {
 
           }
 
-        }
-
-        else {
+        } else {
 
           if (height > maxSize) {
 
@@ -755,3 +733,845 @@ function startMap() {
     }
 
   ).addTo(map);
+
+  finds.forEach(
+
+    addMarker
+
+  );
+
+  if (
+
+    navigator.geolocation
+
+  ) {
+
+    navigator.geolocation.watchPosition(
+
+      function(position) {
+
+        currentLocation = [
+
+          position.coords.latitude,
+
+          position.coords.longitude
+
+        ];
+
+        if (
+
+          !window.locationMarker
+
+        ) {
+
+          window.locationMarker =
+
+          L.circleMarker(
+
+            currentLocation,
+
+            {
+
+              radius: 8,
+
+              color: "white",
+
+              fillColor: "#147ef5",
+
+              fillOpacity: 1
+
+            }
+
+          ).addTo(map);
+
+          map.setView(
+
+            currentLocation,
+
+            17
+
+          );
+
+        }
+
+        else {
+
+          window.locationMarker
+
+          .setLatLng(
+
+            currentLocation
+
+          );
+
+        }
+
+      },
+
+      function() {
+
+        alert(
+
+          "Location access is needed to record a find."
+
+        );
+
+      },
+
+      {
+
+        enableHighAccuracy: true,
+
+        maximumAge: 10000,
+
+        timeout: 15000
+
+      }
+
+    );
+
+  }
+
+}
+
+/* -------------------------
+
+   MAP MARKER
+
+------------------------- */
+
+function addMarker(find) {
+
+  const marker =
+
+  L.circleMarker(
+
+    [
+
+      find.lat,
+
+      find.lng
+
+    ],
+
+    {
+
+      radius: 7,
+
+      color: "white",
+
+      fillColor: "#147ef5",
+
+      fillOpacity: 1
+
+    }
+
+  ).addTo(map);
+
+  marker.on(
+
+    "click",
+
+    function() {
+
+      openFind(find);
+
+    }
+
+  );
+
+  find.marker = marker;
+
+}
+
+/* -------------------------
+
+   OPEN FIND
+
+------------------------- */
+
+function openFind(find) {
+
+  editingFind = find;
+
+  pendingPhoto = null;
+
+  document.getElementById(
+
+    "title"
+
+  ).innerText =
+
+  "Edit Find";
+
+  document.getElementById(
+
+    "findNumber"
+
+  ).innerText =
+
+  "Find #" +
+
+  (find.number || "unknown");
+
+  document.getElementById(
+
+    "find"
+
+  ).value =
+
+  find.find || "";
+
+  document.getElementById(
+
+    "material"
+
+  ).value =
+
+  find.material || "";
+
+  document.getElementById(
+
+    "era"
+
+  ).value =
+
+  find.era || "";
+
+  document.getElementById(
+
+    "remarks"
+
+  ).value =
+
+  find.remarks || "";
+
+  document.getElementById(
+
+    "recorded"
+
+  ).innerText =
+
+  find.recorded
+
+  ?
+
+  "Recorded: " +
+
+  find.recorded
+
+  :
+
+  "";
+
+  const preview =
+
+  document.getElementById(
+
+    "photoPreview"
+
+  );
+
+  if (find.photo) {
+
+    preview.src =
+
+    find.photo;
+
+    preview.style.display =
+
+    "block";
+
+  }
+
+  else {
+
+    preview.src = "";
+
+    preview.style.display =
+
+    "none";
+
+  }
+
+  document.getElementById(
+
+    "form"
+
+  ).style.display =
+
+  "block";
+
+}
+
+/* -------------------------
+
+   NEW FIND
+
+------------------------- */
+
+document.getElementById(
+
+"findButton"
+
+).onclick = function() {
+
+  if (!currentLocation) {
+
+    alert(
+
+      "Waiting for GPS location..."
+
+    );
+
+    return;
+
+  }
+
+  editingFind = null;
+
+  pendingPhoto = null;
+
+  const number =
+
+  nextFindNumber();
+
+  document.getElementById(
+
+    "title"
+
+  ).innerText =
+
+  "New Find";
+
+  document.getElementById(
+
+    "findNumber"
+
+  ).innerText =
+
+  "Find #" + number;
+
+  document.getElementById(
+
+    "find"
+
+  ).value = "";
+
+  document.getElementById(
+
+    "material"
+
+  ).value = "";
+
+  document.getElementById(
+
+    "era"
+
+  ).value = "";
+
+  document.getElementById(
+
+    "remarks"
+
+  ).value = "";
+
+  document.getElementById(
+
+    "recorded"
+
+  ).innerText =
+
+  "Recorded: " +
+
+  formatDate(new Date());
+
+  const preview =
+
+  document.getElementById(
+
+    "photoPreview"
+
+  );
+
+  preview.src = "";
+
+  preview.style.display = "none";
+
+  document.getElementById(
+
+    "cameraInput"
+
+  ).value = "";
+
+  document.getElementById(
+
+    "libraryInput"
+
+  ).value = "";
+
+  document.getElementById(
+
+    "form"
+
+  ).style.display =
+
+  "block";
+
+};
+
+/* -------------------------
+
+   SAVE
+
+------------------------- */
+
+document.getElementById(
+
+"save"
+
+).onclick = function() {
+
+  if (editingFind) {
+
+    editingFind.find =
+
+    document.getElementById(
+
+      "find"
+
+    ).value;
+
+    editingFind.material =
+
+    document.getElementById(
+
+      "material"
+
+    ).value;
+
+    editingFind.era =
+
+    document.getElementById(
+
+      "era"
+
+    ).value;
+
+    editingFind.remarks =
+
+    document.getElementById(
+
+      "remarks"
+
+    ).value;
+
+    if (pendingPhoto) {
+
+      editingFind.photo =
+
+      pendingPhoto;
+
+    }
+
+    localStorage.setItem(
+
+      "finds",
+
+      JSON.stringify(finds)
+
+    );
+
+  }
+
+  else {
+
+    const newFind = {
+
+      number:
+
+      nextFindNumber(),
+
+      find:
+
+      document.getElementById(
+
+        "find"
+
+      ).value,
+
+      material:
+
+      document.getElementById(
+
+        "material"
+
+      ).value,
+
+      era:
+
+      document.getElementById(
+
+        "era"
+
+      ).value,
+
+      remarks:
+
+      document.getElementById(
+
+        "remarks"
+
+      ).value,
+
+      lat:
+
+      currentLocation[0],
+
+      lng:
+
+      currentLocation[1],
+
+      recorded:
+
+      formatDate(new Date()),
+
+      photo:
+
+      pendingPhoto || null
+
+    };
+
+    finds.push(
+
+      newFind
+
+    );
+
+    localStorage.setItem(
+
+      "finds",
+
+      JSON.stringify(finds)
+
+    );
+
+    addMarker(
+
+      newFind
+
+    );
+
+  }
+
+  document.getElementById(
+
+    "form"
+
+  ).style.display =
+
+  "none";
+
+  pendingPhoto = null;
+
+  updateFindList();
+
+};
+
+/* -------------------------
+
+   CANCEL
+
+------------------------- */
+
+document.getElementById(
+
+"cancel"
+
+).onclick = function() {
+
+  document.getElementById(
+
+    "form"
+
+  ).style.display =
+
+  "none";
+
+  pendingPhoto = null;
+
+};
+
+/* -------------------------
+
+   FINDS LIST
+
+------------------------- */
+
+function updateFindList() {
+
+  const list =
+
+  document.getElementById(
+
+    "findList"
+
+  );
+
+  list.innerHTML = "";
+
+  if (finds.length === 0) {
+
+    list.innerHTML =
+
+    '<div id="noFinds">No finds recorded yet.</div>';
+
+    return;
+
+  }
+
+  const sortedFinds =
+
+  [...finds].sort(
+
+    function(a, b) {
+
+      return (
+
+        Number(a.number || 0) -
+
+        Number(b.number || 0)
+
+      );
+
+    }
+
+  );
+
+  sortedFinds.forEach(
+
+    function(find) {
+
+      const item =
+
+      document.createElement(
+
+        "div"
+
+      );
+
+      item.className =
+
+      "findItem";
+
+      const title =
+
+      document.createElement(
+
+        "strong"
+
+      );
+
+      title.innerText =
+
+      "Find #" +
+
+      (find.number || "");
+
+      if (find.find) {
+
+        title.innerText +=
+
+        " — " +
+
+        find.find;
+
+      }
+
+      const details =
+
+      document.createElement(
+
+        "small"
+
+      );
+
+      let detailText = "";
+
+      if (find.material) {
+
+        detailText +=
+
+        find.material;
+
+      }
+
+      if (
+
+        find.era
+
+      ) {
+
+        if (detailText) {
+
+          detailText +=
+
+          " · ";
+
+        }
+
+        detailText +=
+
+        find.era;
+
+      }
+
+      if (
+
+        find.photo
+
+      ) {
+
+        if (detailText) {
+
+          detailText +=
+
+          " · ";
+
+        }
+
+        detailText +=
+
+        "📷 Photo";
+
+      }
+
+      details.innerText =
+
+      detailText;
+
+      item.appendChild(
+
+        title
+
+      );
+
+      item.appendChild(
+
+        details
+
+      );
+
+      item.onclick =
+
+      function() {
+
+        document.getElementById(
+
+          "findsPanel"
+
+        ).style.display =
+
+        "none";
+
+        if (
+
+          find.lat &&
+
+          find.lng
+
+        ) {
+
+          map.setView(
+
+            [
+
+              find.lat,
+
+              find.lng
+
+            ],
+
+            19
+
+          );
+
+        }
+
+        openFind(find);
+
+      };
+
+      list.appendChild(
+
+        item
+
+      );
+
+    }
+
+  );
+
+}
+
+/* -------------------------
+
+   OPEN FINDS
+
+------------------------- */
+
+document.getElementById(
+
+"findsButton"
+
+).onclick = function() {
+
+  updateFindList();
+
+  document.getElementById(
+
+    "findsPanel"
+
+  ).style.display =
+
+  "block";
+
+};
+
+/* -------------------------
+
+   CLOSE FINDS
+
+------------------------- */
+
+document.getElementById(
+
+"closeFinds"
+
+).onclick = function() {
+
+  document.getElementById(
+
+    "findsPanel"
+
+  ).style.display =
+
+  "none";
+
+};
+
+/* -------------------------
+
+   START
+
+------------------------- */
+
+startMap();
+
+updateFindList();
+
+</script>
+
+</body>
+
+</html>
