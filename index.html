@@ -34,6 +34,36 @@ body {
 
 }
 
+.topButton {
+
+  position: fixed;
+
+  top: 15px;
+
+  z-index: 1000;
+
+  background: white;
+
+  border: none;
+
+  border-radius: 12px;
+
+  padding: 12px 16px;
+
+  font-size: 16px;
+
+  font-weight: bold;
+
+  box-shadow: 0 2px 8px #555;
+
+}
+
+#findsButton {
+
+  right: 15px;
+
+}
+
 #findButton {
 
   position: fixed;
@@ -89,6 +119,74 @@ body {
   max-height: 90vh;
 
   overflow-y: auto;
+
+}
+
+#findsPanel {
+
+  display: none;
+
+  position: fixed;
+
+  top: 10px;
+
+  left: 10px;
+
+  right: 10px;
+
+  bottom: 10px;
+
+  z-index: 2500;
+
+  background: white;
+
+  border-radius: 18px;
+
+  box-shadow: 0 2px 15px #555;
+
+  overflow-y: auto;
+
+  padding: 18px;
+
+}
+
+#findsPanel h2 {
+
+  margin-top: 0;
+
+}
+
+.findItem {
+
+  border-bottom: 1px solid #ddd;
+
+  padding: 14px 5px;
+
+  cursor: pointer;
+
+}
+
+.findItem strong {
+
+  font-size: 18px;
+
+}
+
+.findItem small {
+
+  display: block;
+
+  color: #666;
+
+  margin-top: 4px;
+
+}
+
+#closeFinds {
+
+  float: right;
+
+  background: #ddd;
 
 }
 
@@ -232,21 +330,11 @@ button {
 
 }
 
-#photoInput {
+#cameraInput,
+
+#libraryInput {
 
   display: none;
-
-}
-
-#existingPhoto {
-
-  display: none;
-
-  margin-top: 10px;
-
-  color: #555;
-
-  font-size: 14px;
 
 }
 
@@ -258,11 +346,41 @@ button {
 
 <div id="map"></div>
 
+<button
+
+class="topButton"
+
+id="findsButton">
+
+☰ FINDS
+
+</button>
+
 <button id="findButton">
 
 ＋ FIND
 
 </button>
+
+<div id="findsPanel">
+
+<button id="closeFinds">
+
+CLOSE
+
+</button>
+
+<h2>
+
+My Finds
+
+</h2>
+
+<div id="findList">
+
+</div>
+
+</div>
 
 <div id="form">
 
@@ -377,12 +495,6 @@ accept="image/*">
 <img
 
 id="photoPreview">
-
-<div id="existingPhoto">
-
-Photo attached to this find
-
-</div>
 
 <div id="recorded">
 
@@ -592,11 +704,7 @@ function compressPhoto(file) {
 
 function handlePhoto(file) {
 
-  if (!file) {
-
-    return;
-
-  }
+  if (!file) return;
 
   compressPhoto(file)
 
@@ -619,14 +727,6 @@ function handlePhoto(file) {
     preview.style.display =
 
     "block";
-
-    document.getElementById(
-
-      "existingPhoto"
-
-    ).style.display =
-
-    "none";
 
   });
 
@@ -672,578 +772,5 @@ document.getElementById(
 
 );
 
-function startMap() {
-
-  map = L.map("map");
-
-  L.tileLayer(
-
-    "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-
-    {
-
-      attribution:
-
-      "Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics"
-
-    }
-
-  ).addTo(map);
-
-  finds.forEach(addMarker);
-
-  if (
-
-    navigator.geolocation
-
-  ) {
-
-    navigator.geolocation.watchPosition(
-
-      function(position) {
-
-        currentLocation = [
-
-          position.coords.latitude,
-
-          position.coords.longitude
-
-        ];
-
-        if (
-
-          !window.locationMarker
-
-        ) {
-
-          window.locationMarker =
-
-          L.circleMarker(
-
-            currentLocation,
-
-            {
-
-              radius: 8,
-
-              color: "white",
-
-              fillColor: "#147ef5",
-
-              fillOpacity: 1
-
-            }
-
-          ).addTo(map);
-
-          map.setView(
-
-            currentLocation,
-
-            17
-
-          );
-
-        }
-
-        else {
-
-          window.locationMarker
-
-          .setLatLng(
-
-            currentLocation
-
-          );
-
-        }
-
-      },
-
-      function() {
-
-        alert(
-
-          "Location access is needed to record a find."
-
-        );
-
-      },
-
-      {
-
-        enableHighAccuracy: true,
-
-        maximumAge: 10000,
-
-        timeout: 15000
-
-      }
-
-    );
-
-  }
-
-}
-
-function addMarker(find) {
-
-  let marker =
-
-  L.circleMarker(
-
-    [find.lat, find.lng],
-
-    {
-
-      radius: 7,
-
-      color: "white",
-
-      fillColor: "#147ef5",
-
-      fillOpacity: 1
-
-    }
-
-  ).addTo(map);
-
-  marker.on(
-
-    "click",
-
-    function() {
-
-      editingFind = find;
-
-      pendingPhoto = null;
-
-      document.getElementById(
-
-        "title"
-
-      ).innerText =
-
-      "Edit Find";
-
-      document.getElementById(
-
-        "findNumber"
-
-      ).innerText =
-
-      "Find #" +
-
-      (
-
-        find.number ||
-
-        "unknown"
-
-      );
-
-      document.getElementById(
-
-        "find"
-
-      ).value =
-
-      find.find || "";
-
-      document.getElementById(
-
-        "material"
-
-      ).value =
-
-      find.material || "";
-
-      document.getElementById(
-
-        "era"
-
-      ).value =
-
-      find.era || "";
-
-      document.getElementById(
-
-        "remarks"
-
-      ).value =
-
-      find.remarks || "";
-
-      document.getElementById(
-
-        "recorded"
-
-      ).innerText =
-
-      find.recorded
-
-      ?
-
-      "Recorded: " +
-
-      find.recorded
-
-      :
-
-      "";
-
-      let preview =
-
-      document.getElementById(
-
-        "photoPreview"
-
-      );
-
-      if (find.photo) {
-
-        preview.src =
-
-        find.photo;
-
-        preview.style.display =
-
-        "block";
-
-        document.getElementById(
-
-          "existingPhoto"
-
-        ).style.display =
-
-        "block";
-
-      }
-
-      else {
-
-        preview.src = "";
-
-        preview.style.display =
-
-        "none";
-
-        document.getElementById(
-
-          "existingPhoto"
-
-        ).style.display =
-
-        "none";
-
-      }
-
-      document.getElementById(
-
-        "form"
-
-      ).style.display =
-
-      "block";
-
-    }
-
-  );
-
-}
-
-document.getElementById(
-
-  "findButton"
-
-).onclick = function() {
-
-  if (!currentLocation) {
-
-    alert(
-
-      "Waiting for GPS location..."
-
-    );
-
-    return;
-
-  }
-
-  editingFind = null;
-
-  pendingPhoto = null;
-
-  let number =
-
-  nextFindNumber();
-
-  document.getElementById(
-
-    "title"
-
-  ).innerText =
-
-  "New Find";
-
-  document.getElementById(
-
-    "findNumber"
-
-  ).innerText =
-
-  "Find #" + number;
-
-  document.getElementById(
-
-    "find"
-
-  ).value = "";
-
-  document.getElementById(
-
-    "material"
-
-  ).value = "";
-
-  document.getElementById(
-
-    "era"
-
-  ).value = "";
-
-  document.getElementById(
-
-    "remarks"
-
-  ).value = "";
-
-  document.getElementById(
-
-    "recorded"
-
-  ).innerText =
-
-  "Recorded: " +
-
-  formatDate(
-
-    new Date()
-
-  );
-
-  document.getElementById(
-
-    "photoPreview"
-
-  ).style.display =
-
-  "none";
-
-  document.getElementById(
-
-    "photoPreview"
-
-  ).src = "";
-
-  document.getElementById(
-
-    "existingPhoto"
-
-  ).style.display =
-
-  "none";
-
-  document.getElementById(
-
-    "cameraInput"
-
-  ).value = "";
-
-  document.getElementById(
-
-    "libraryInput"
-
-  ).value = "";
-
-  document.getElementById(
-
-    "form"
-
-  ).style.display =
-
-  "block";
-
-};
-
-document.getElementById(
-
-  "cancel"
-
-).onclick = function() {
-
-  document.getElementById(
-
-    "form"
-
-  ).style.display =
-
-  "none";
-
-  pendingPhoto = null;
-
-};
-
-document.getElementById(
-
-  "save"
-
-).onclick = function() {
-
-  if (editingFind) {
-
-    editingFind.find =
-
-    document.getElementById(
-
-      "find"
-
-    ).value;
-
-    editingFind.material =
-
-    document.getElementById(
-
-      "material"
-
-    ).value;
-
-    editingFind.era =
-
-    document.getElementById(
-
-      "era"
-
-    ).value;
-
-    editingFind.remarks =
-
-    document.getElementById(
-
-      "remarks"
-
-    ).value;
-
-    if (pendingPhoto) {
-
-      editingFind.photo =
-
-      pendingPhoto;
-
-    }
-
-    localStorage.setItem(
-
-      "finds",
-
-      JSON.stringify(finds)
-
-    );
-
-  }
-
-  else {
-
-    let newFind = {
-
-      number:
-
-      nextFindNumber(),
-
-      find:
-
-      document.getElementById(
-
-        "find"
-
-      ).value,
-
-      material:
-
-      document.getElementById(
-
-        "material"
-
-      ).value,
-
-      era:
-
-      document.getElementById(
-
-        "era"
-
-      ).value,
-
-      remarks:
-
-      document.getElementById(
-
-        "remarks"
-
-      ).value,
-
-      lat:
-
-      currentLocation[0],
-
-      lng:
-
-      currentLocation[1],
-
-      recorded:
-
-      formatDate(
-
-        new Date()
-
-      ),
-
-      photo:
-
-      pendingPhoto || null
-
-    };
-
-    finds.push(newFind);
-
-    localStorage.setItem(
-
-      "finds",
-
-      JSON.stringify(finds)
-
-    );
-
-    addMarker(newFind);
-
-  }
-
-  document.getElementById(
-
-    "form"
-
-  ).style.display =
-
-  "none";
-
-  pendingPhoto = null;
-
-};
-
-startMap();
-
-</script>
-
-</body>
-
-</html>
+function
+  
