@@ -1064,7 +1064,7 @@ function addMarker(find) {
 
 /* =====================================================
 
-   MAP START
+   START MAP
 
 ===================================================== */
 
@@ -1928,6 +1928,8 @@ function() {
 
   }
 
+  /* CLOSE FORM */
+
   document.getElementById(
 
     "form"
@@ -1935,6 +1937,18 @@ function() {
   ).style.display =
 
   "none";
+
+  /* CLOSE FINDS WINDOW */
+
+  document.getElementById(
+
+    "findsPanel"
+
+  ).style.display =
+
+  "none";
+
+  /* RESET */
 
   editingFind =
 
@@ -1947,6 +1961,12 @@ function() {
   selectedLocation =
 
   null;
+
+  placingFind =
+
+  false;
+
+  /* REFRESH LIST */
 
   updateFindList();
 
@@ -2089,6 +2109,14 @@ function() {
   document.getElementById(
 
     "form"
+
+  ).style.display =
+
+  "none";
+
+  document.getElementById(
+
+    "findsPanel"
 
   ).style.display =
 
